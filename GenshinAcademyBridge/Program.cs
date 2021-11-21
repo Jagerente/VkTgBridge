@@ -1,12 +1,11 @@
 ﻿using GenshinAcademyBridge.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using GenshinAcademyBridge.Configuration;
 using GenshinAcademyBridge.Modules;
 
 namespace GenshinAcademyBridge
@@ -17,16 +16,19 @@ namespace GenshinAcademyBridge
         public const string BridgesPath = ConfigPath + "bridges/";
         public static TgBot TgBot;
         public static VkBot VkBot;
-        public static List<Configuration.Bridge> Bridges;
+        public static List<Bridge> Bridges;
+
+        public static Dictionary<long, long> MessagesIds;
+
 
         public static ServiceCollection Services { get; private set; }
 
-        static void Main(string[] args)
+        static void Main()
         {
             Services = new ServiceCollection();
             SetupBridges();
             SetupLogger();
-         
+            MessagesIds = new Dictionary<long, long>();
             TgBot = new TgBot();
 
             VkBot = new VkBot();
@@ -43,19 +45,19 @@ namespace GenshinAcademyBridge
 
             if (Directory.GetFiles(BridgesPath).Length == 0)
             {
-                var cfg = new Configuration.Bridge();
+                var cfg = new Bridge();
                 Console.WriteLine("Set bridge title:");
                 var title = Console.ReadLine();
                 Console.WriteLine("Set VK conversation id:");
-                cfg.VkId = long.Parse(Console.ReadLine());
+                cfg.VkId = long.Parse(Console.ReadLine() ?? string.Empty);
                 Console.WriteLine("Set TG conversation id:");
-                cfg.TgId = long.Parse(Console.ReadLine());
+                cfg.TgId = long.Parse(Console.ReadLine() ?? string.Empty);
                 JsonStorage.StoreObject(cfg, $"{BridgesPath}/{title}.json");
             }
-            Bridges = new List<Configuration.Bridge>();
+            Bridges = new List<Bridge>();
             foreach (var bridge in Directory.GetFiles(BridgesPath))
             {
-                Bridges.Add(JsonStorage.RestoreObject<Configuration.Bridge>(bridge));
+                Bridges.Add(JsonStorage.RestoreObject<Bridge>(bridge));
             }
         }
 
