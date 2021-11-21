@@ -11,9 +11,9 @@ using Telegram.Bot.Types;
 
 namespace GenshinAcademyBridge.Modules
 {
-    class TgBot
+    public class TgBot
     {
-        private const string TgConfigPath = Program.ConfigPath + "tgConfig.json";
+        private const string TgConfigPath = ChatBridgeService.ConfigPath + "tgConfig.json";
 
         public static TelegramBotClient TgApi { get; private set; }
 

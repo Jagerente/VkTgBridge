@@ -19,16 +19,17 @@ using VkNet.Model.RequestParams;
 
 namespace GenshinAcademyBridge.Modules
 {
-    class VkBot
+    public class VkBot
     {
         public static VkApi VkApi { get; private set; }
 
-        public const string VkConfigPath = Program.ConfigPath + "vkConfig.json";
+        public const string VkConfigPath = ChatBridgeService.ConfigPath + "vkConfig.json";
 
         public static Configuration.VkConfiguration VkConfig;
 
-        public VkBot()
+        public VkBot(VkApi api)
         {
+            VkApi = api;
             SetupVk();
             var cancellationTokenSource = new CancellationTokenSource();
             if (VkApi.IsAuthorizedAsUser())
@@ -61,7 +62,6 @@ namespace GenshinAcademyBridge.Modules
             Helpers.GetConfig(VkConfigPath);
 
             VkConfig = JsonStorage.RestoreObject<Configuration.VkConfiguration>(VkConfigPath);
-            VkApi = new VkApi(Program.Services);
 
             VkApi.Authorize(new ApiAuthParams
             {

@@ -1,4 +1,5 @@
 ﻿using GenshinAcademyBridge.Extensions;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
@@ -7,79 +8,65 @@ using System.Collections.Generic;
 using System.IO;
 using GenshinAcademyBridge.Configuration;
 using GenshinAcademyBridge.Modules;
+using Microsoft.Extensions.Hosting;
+using VkNet;
+using System.Threading.Tasks;
 
 namespace GenshinAcademyBridge
 {
     class Program
     {
-        public const string ConfigPath = "configuration/";
-        public const string BridgesPath = ConfigPath + "bridges/";
-        public static TgBot TgBot;
-        public static VkBot VkBot;
         public static List<Bridge> Bridges;
 
         public static Dictionary<long, long> MessagesIds;
 
-
-        public static ServiceCollection Services { get; private set; }
-
-        static void Main()
+        private static void ConfigureServices(IServiceCollection services)
         {
-            Services = new ServiceCollection();
-            SetupBridges();
-            SetupLogger();
-            MessagesIds = new Dictionary<long, long>();
-            TgBot = new TgBot();
+           var logger = new LoggerConfiguration()
+             .MinimumLevel
+             .Information()
+             .WriteTo
+             .Console()
+             .WriteTo
+             .File("log.txt",
+                 rollingInterval: RollingInterval.Day,
+                 rollOnFileSizeLimit: true)
+             .CreateLogger();
+            Log.Logger = logger;
 
-            VkBot = new VkBot();
-
-            while (true)
-            {
-
-            }
-        }
-
-        private static void SetupBridges()
-        {
-            if (!Directory.Exists(BridgesPath)) Directory.CreateDirectory(BridgesPath);
-
-            if (Directory.GetFiles(BridgesPath).Length == 0)
-            {
-                var cfg = new Bridge();
-                Console.WriteLine("Set bridge title:");
-                var title = Console.ReadLine();
-                Console.WriteLine("Set VK conversation id:");
-                cfg.VkId = long.Parse(Console.ReadLine() ?? string.Empty);
-                Console.WriteLine("Set TG conversation id:");
-                cfg.TgId = long.Parse(Console.ReadLine() ?? string.Empty);
-                JsonStorage.StoreObject(cfg, $"{BridgesPath}/{title}.json");
-            }
-            Bridges = new List<Bridge>();
-            foreach (var bridge in Directory.GetFiles(BridgesPath))
-            {
-                Bridges.Add(JsonStorage.RestoreObject<Bridge>(bridge));
-            }
-        }
-
-        private static void SetupLogger()
-        {
-            Log.Logger = new LoggerConfiguration()
-        .MinimumLevel
-        .Information()
-        .WriteTo
-        .Console()
-        .WriteTo
-        .File("log.txt",
-            rollingInterval: RollingInterval.Day,
-            rollOnFileSizeLimit: true)
-        .CreateLogger();
-
-            Services.AddLogging(builder =>
+            services.AddLogging(builder =>
             {
                 builder.ClearProviders();
                 builder.SetMinimumLevel(LogLevel.Trace);
-                builder.AddSerilog(dispose: true);
+                builder.AddSerilog(logger, true);
             });
+
+            services.AddSingleton<VkApi>(provider => new VkApi(services));
+
+            services.AddSingleton<VkBot>();
+            services.AddSingleton<TgBot>();
+        }
+
+        public static IHostBuilder CreateHostBuilder(string[] args)
+        {
+            return Host.CreateDefaultBuilder(args)
+                .ConfigureServices(services =>
+                {
+                    ConfigureServices(services);
+                    services.Configure<HostOptions>(options =>
+                    {
+                        options.ShutdownTimeout = TimeSpan.MaxValue;
+                    });
+                    services.AddHostedService<ChatBridgeService>();
+                });
+        }
+
+        public static async Task Main(string[] args)
+        {
+            MessagesIds = new Dictionary<long, long>();
+            var host = CreateHostBuilder(args).Build();
+
+            await host.RunAsync();
         }
     }
 }

@@ -10,7 +10,7 @@ namespace GenshinAcademyBridge.Extensions
     {
         public static void GetConfig(string cfgPath)
         {
-            if (!Directory.Exists(Program.ConfigPath)) Directory.CreateDirectory(Program.ConfigPath);
+            if (!Directory.Exists(ChatBridgeService.ConfigPath)) Directory.CreateDirectory(ChatBridgeService.ConfigPath);
 
             if (!File.Exists(cfgPath))
             {
