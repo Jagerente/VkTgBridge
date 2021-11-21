@@ -1,6 +1,4 @@
-﻿using Newtonsoft.Json;
-
-namespace GenshinAcademyBridge.Configuration
+﻿namespace GenshinAcademyBridge.Configuration
 {
     public class TgConfiguration : ApiConfiguration
     {

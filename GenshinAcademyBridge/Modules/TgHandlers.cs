@@ -1,17 +1,25 @@
 ﻿using GenshinAcademyBridge.Extensions;
 using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using GroupDocs.Conversion;
+using GroupDocs.Conversion.FileTypes;
+using GroupDocs.Conversion.Options.Convert;
+using ImageProcessor;
+using ImageProcessor.Imaging.Formats;
+using RestSharp;
+using RestSharp.Authenticators;
+using Serilog;
+using Serilog.Core;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Types.InlineQueryResults;
-using Telegram.Bot.Types.InputFiles;
-using Telegram.Bot.Types.ReplyMarkups;
+using File = System.IO.File;
 
 namespace GenshinAcademyBridge.Modules
 {
@@ -25,7 +33,7 @@ namespace GenshinAcademyBridge.Modules
                 _ => exception.ToString()
             };
 
-            Console.WriteLine(ErrorMessage);
+            Serilog.Log.Error(ErrorMessage);
             return Task.CompletedTask;
         }
 
@@ -59,19 +67,39 @@ namespace GenshinAcademyBridge.Modules
             switch (message.Type)
             {
                 case MessageType.Text:
-                    if (message.ReplyToMessage != null)
-                    {
-                        msg = $"{message.From.Username.FirstCharToUpper()} reply to {message.ReplyToMessage.From.Username.FirstCharToUpper()} 💬\n";
-                    }
-                    
-                    Console.WriteLine(message.ForwardFromChat?.Username);
-                    Console.WriteLine(message.ReplyToMessage?.From.Username);
-                    Console.WriteLine(message.ReplyToMessage?.Text);
+                    //if (message.ReplyToMessage != null)
+                    //{
+                    //    msg = $"{message.From.Username.FirstCharToUpper()} reply to {message.ReplyToMessage.From.Username.FirstCharToUpper()} 💬\n";
+                    //}
+
+                    //Console.WriteLine(message.ForwardSenderName);
 
                     msg = Helpers.GetMessageTop(VkMessageType.Text, sender, message.Text);
+
+                    if (message.ForwardFrom != null)
+                    {
+                        msg = Helpers.GetMessageTop(VkMessageType.Forwarded, sender, message.Text, message.ForwardFrom.Username.FirstCharToUpper());
+                    }
+                    if (message.ForwardFromChat != null)
+                    {
+                        Log.Logger.Information("Joined.");
+                        msg = Helpers.GetMessageTop(VkMessageType.Forwarded, sender, message.Text, message.ForwardFromChat.Username.FirstCharToUpper());
+                    }
+                    if (message.ReplyToMessage != null)
+                    {
+                        Log.Logger.Information(message.ReplyToMessage.From.Username);
+                        msg = Helpers.GetMessageTop(VkMessageType.Text, sender, message.Text, message.ReplyToMessage.From.Username).FirstCharToUpper();
+                        foreach (var bridge in Program.Bridges)
+                        {
+                            Program.MessagesIds.Add(message.MessageId, await VkBot.ReplyAsync(bridge.VkId, msg, Program.MessagesIds[message.ReplyToMessage.MessageId]));
+                        }
+                        break;
+                    }
+
                     foreach (var bridge in Program.Bridges)
                     {
-                        await VkBot.SendMessageAsync(bridge.VkId, msg);
+                        Program.MessagesIds.Add(message.MessageId, await VkBot.SendMessageAsync(bridge.VkId, msg));
+                        Console.WriteLine("ADDED");
                     }
                     break;
                 case MessageType.Photo:
@@ -114,17 +142,51 @@ namespace GenshinAcademyBridge.Modules
                     fileId = message.Sticker.FileId;
                     fileInfo = await botClient.GetFileAsync(fileId);
                     if (!Directory.Exists("resources")) Directory.CreateDirectory("resources");
-                    filePath = $"resources/{fileId}.{fileInfo.FilePath.Split(".").Last()}";
-                    using (var fileStream = System.IO.File.OpenWrite($"resources/{fileId}.{fileInfo.FilePath.Split(".").Last()}"))
+                    filePath = $"resources/{fileId}";
+                    using (var fileStream = System.IO.File.OpenWrite($"{filePath}.{fileInfo.FilePath.Split(".").Last()}"))
                     {
                         await botClient.DownloadFileAsync(
                           filePath: fileInfo.FilePath,
                           destination: fileStream
                         );
                     }
+                    byte[] photoBytes = File.ReadAllBytes($"{filePath}.{fileInfo.FilePath.Split(".").Last()}");
+                    // Format is automatically detected though can be changed.
+                    ISupportedImageFormat format = new PngFormat(){ Quality = 70 };
+                    using (MemoryStream inStream = new MemoryStream(photoBytes))
+                    {
+                        using (MemoryStream outStream = new MemoryStream())
+                        {
+                            // Initialize the ImageFactory using the overload to preserve EXIF metadata.
+                            using (ImageFactory imageFactory = new ImageFactory(preserveExifData: true))
+                            {
+                                //Size size = imageFactory.Load(inStream).Image.Size.Width == imageFactory.Load(inStream).Image.Size.Height ? new Size(150, 150) : imageFactory.Load(inStream).Image.Size;
+                                Size size = new Size(150, 150);
+                                // Load, resize, set the format and quality and save an image.
+                                imageFactory.Load(inStream)
+                                    .Resize(size)
+                                    .Format(format)
+                                    .Save(outStream);
+                            }
+                            File.WriteAllBytes(filePath+".png", outStream.GetBuffer());
+                            // Do something with the stream.
+                            File.Delete(filePath + ".webp");
+                        }
+                    }
+
+                    //using (Converter converter = new Converter($"{filePath}.{fileInfo.FilePath.Split(".").Last()}"))
+                    //{
+                    //    ImageConvertOptions options = new ImageConvertOptions
+                    //    { 
+                    //        Format = ImageFileType.Png,
+                    //        Width = 125,
+                    //        Height = 125
+                    //    };
+                    //    converter.Convert($"{filePath.Split(".").FirstOrDefault()}.png", options);
+                    //}
                     foreach (var bridge in Program.Bridges)
                     {
-                        await VkBot.SendPhotoAsync(bridge.VkId, string.Empty, filePath);
+                        await VkBot.SendStickerAsync(bridge.VkId, Helpers.GetMessageTop(VkMessageType.Sticker, sender), $"{filePath}.png");
                     }
                     break;
                 case MessageType.Poll:

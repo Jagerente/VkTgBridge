@@ -1,11 +1,8 @@
 ﻿using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace GenshinAcademyBridge.Extensions
 {
@@ -33,6 +30,10 @@ namespace GenshinAcademyBridge.Extensions
             {
                 case VkMessageType.Text:
                     return $"{sender} 💬\n{text}";
+                case VkMessageType.Reply:
+                    return $"Reply to {reply} 💬\n{text}";
+                case VkMessageType.Forwarded:
+                    return $"{sender} forward from {reply} 💬\n{text}";
                 case VkMessageType.Photo:
                     return $"{sender} 💬\n{text}";
                 case VkMessageType.Audio:
@@ -49,6 +50,8 @@ namespace GenshinAcademyBridge.Extensions
                     return $"{sender} left.";
                 case VkMessageType.Poll:
                     return $"{sender} created a poll 📝\n{text}";
+                case VkMessageType.Sticker:
+                    return $"{sender} 💬";
                 default:
                     return string.Empty;
             }
@@ -115,7 +118,9 @@ namespace GenshinAcademyBridge.Extensions
         Sticker = 7,
         ChatMembersAdded = 8,
         ChatMemberLeft = 9,
-        Poll = 10
+        Poll = 10,
+        Reply = 11,
+        Forwarded = 12
     }
 
 

@@ -1,14 +1,11 @@
-﻿using GenshinAcademyBridge.Extensions;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
+﻿using System;
+using GenshinAcademyBridge.Extensions;
 using System.Linq;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Serilog;
 using Telegram.Bot;
-using Telegram.Bot.Exceptions;
+using Telegram.Bot.Args;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
 
@@ -25,10 +22,10 @@ namespace GenshinAcademyBridge.Modules
 
         public TgBot()
         {
-            SetupTGAsync();
+            SetupTgAsync();
         }
 
-        private static async void SetupTGAsync()
+        private static async void SetupTgAsync()
         {
             Helpers.GetConfig(TgConfigPath);
 
@@ -42,7 +39,8 @@ namespace GenshinAcademyBridge.Modules
 
             var receiverOptions = new ReceiverOptions
             {
-                AllowedUpdates = new[] { Telegram.Bot.Types.Enums.UpdateType.Message } // Receiving messages only
+                AllowedUpdates = new[] { Telegram.Bot.Types.Enums.UpdateType.Message }, // Receiving messages only
+                ThrowPendingUpdates = true
             };
             TgApi.StartReceiving(
                 TgHandlers.HandleUpdateAsync,
@@ -51,11 +49,19 @@ namespace GenshinAcademyBridge.Modules
             );
         }
 
-        public static async Task SendMessageAsync(long conversationId, string message)
+
+        public static async Task<long> SendMessageAsync(long conversationId, string message)
         {
-            await TgApi.SendTextMessageAsync(chatId: conversationId, text: message);
             Serilog.Log.ForContext("Message", message).Information($"Sent a message to TG.");
+            return Convert.ToInt64((await TgApi.SendTextMessageAsync(chatId: conversationId, text: message)).MessageId);
         }
+
+        public static async Task<long> ReplyAsync(long conversationId, string message, long id)
+        {
+            Serilog.Log.ForContext("Message", message).Information($"Sent a message to TG.");
+            return Convert.ToInt64((await TgApi.SendTextMessageAsync(chatId: conversationId, text: message, replyToMessageId: Convert.ToInt32(id))).MessageId);
+        }
+
         public static async Task SendStickerAsync(long conversationId, string message, string url)
         {
             await SendPhotoAsync(conversationId, message, url);
