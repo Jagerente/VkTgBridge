@@ -1,27 +1,38 @@
 ﻿using GenshinAcademyBridge.Configuration;
 using GenshinAcademyBridge.Extensions;
 using GenshinAcademyBridge.Modules;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using Serilog;
 
 namespace GenshinAcademyBridge
 {
     public class ChatBridgeService : IHostedService
     {
+        private ILogger _logger;
+
         public const string ConfigPath = "configuration/";
         public const string BridgesPath = ConfigPath + "bridges/";
 
-        public ChatBridgeService(
-            VkBot vk,
-            TgBot tg)
+        public IReadOnlyCollection<IChat> Chats { get; }
+
+        public ChatBridgeService(ILogger logger, IServiceProvider serviceProvider)
         {
+            IEnumerable<IChat> chatServices = serviceProvider.GetServices<IChat>();
+            if(chatServices.Count() <= 1)
+            {
+                throw new InvalidOperationException("Application is ment to be run with ateast 2 chats");
+            }
+            _logger = logger;
             SetupBridges();
+            Chats = new List<IChat>(chatServices);
         }
 
 
@@ -48,15 +59,20 @@ namespace GenshinAcademyBridge
         }
         public async Task StartAsync(CancellationToken cancellationToken)
         {
+            await Task.WhenAll(Chats.Select(x => x.InitializeAsync()));
+            await Task.WhenAll(Chats.Select(x => x.RunAsync()));
+            _logger.Information("Application started.");
             while (true)
             {
-                await Task.Delay(5000);
+                cancellationToken.ThrowIfCancellationRequested();
+                await Task.Delay(1000, cancellationToken);
             }
         }
 
-        public Task StopAsync(CancellationToken cancellationToken)
+        public async Task StopAsync(CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            await Task.CompletedTask;
+            cancellationToken.ThrowIfCancellationRequested();
         }
     }
 }
