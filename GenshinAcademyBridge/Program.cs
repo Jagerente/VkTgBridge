@@ -11,6 +11,7 @@ using GenshinAcademyBridge.Modules;
 using Microsoft.Extensions.Hosting;
 using VkNet;
 using System.Threading.Tasks;
+using System.Linq;
 
 namespace GenshinAcademyBridge
 {
@@ -20,18 +21,21 @@ namespace GenshinAcademyBridge
 
         public static Dictionary<long, long> MessagesIds;
 
-        private static void ConfigureServices(IServiceCollection services)
+        private static void ConfigureServices(IServiceCollection services, IConfiguration configuration)
         {
-           var logger = new LoggerConfiguration()
-             .MinimumLevel
-             .Information()
-             .WriteTo
-             .Console()
-             .WriteTo
-             .File("log.txt",
-                 rollingInterval: RollingInterval.Day,
-                 rollOnFileSizeLimit: true)
-             .CreateLogger();
+            services.AddSingleton(services);
+            services.AddSingleton(new Random());
+
+            var logger = new LoggerConfiguration()
+                .MinimumLevel
+                .Information()
+                .WriteTo
+                .Console()
+                .WriteTo
+                .File("log.txt",
+                    rollingInterval: RollingInterval.Day,
+                    rollOnFileSizeLimit: true)
+                .CreateLogger();
             Log.Logger = logger;
 
             services.AddLogging(builder =>
@@ -40,19 +44,32 @@ namespace GenshinAcademyBridge
                 builder.SetMinimumLevel(LogLevel.Trace);
                 builder.AddSerilog(logger, true);
             });
+            services.AddSingleton(Log.Logger);
 
-            services.AddSingleton<VkApi>(provider => new VkApi(services));
-
-            services.AddSingleton<VkBot>();
-            services.AddSingleton<TgBot>();
+            services.AddVkChat(configuration);
+            services.AddTelegramChat(configuration);
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args)
         {
+            IConfiguration config = null;
             return Host.CreateDefaultBuilder(args)
+                .ConfigureAppConfiguration((ctx, builder) =>
+                {
+                    builder.Sources.Clear();
+
+                    builder.AddJsonFile("bridgeConfiguration.json");
+                    builder.AddEnvironmentVariables();
+                    if(args.Length > 0)
+                    {
+                        builder.AddCommandLine(args);
+                    }
+
+                    config = builder.Build();
+                })
                 .ConfigureServices(services =>
                 {
-                    ConfigureServices(services);
+                    ConfigureServices(services, config);
                     services.Configure<HostOptions>(options =>
                     {
                         options.ShutdownTimeout = TimeSpan.MaxValue;
