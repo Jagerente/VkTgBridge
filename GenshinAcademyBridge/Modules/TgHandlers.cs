@@ -76,30 +76,29 @@ namespace GenshinAcademyBridge.Modules
 
                     msg = Helpers.GetMessageTop(VkMessageType.Text, sender, message.Text);
 
-                    if (message.ForwardFrom != null)
-                    {
-                        msg = Helpers.GetMessageTop(VkMessageType.Forwarded, sender, message.Text, message.ForwardFrom.Username.FirstCharToUpper());
-                    }
-                    if (message.ForwardFromChat != null)
-                    {
-                        Log.Logger.Information("Joined.");
-                        msg = Helpers.GetMessageTop(VkMessageType.Forwarded, sender, message.Text, message.ForwardFromChat.Username.FirstCharToUpper());
-                    }
-                    if (message.ReplyToMessage != null)
-                    {
-                        Log.Logger.Information(message.ReplyToMessage.From.Username);
-                        msg = Helpers.GetMessageTop(VkMessageType.Text, sender, message.Text, message.ReplyToMessage.From.Username).FirstCharToUpper();
-                        foreach (var bridge in Program.Bridges)
-                        {
-                            Program.MessagesIds.Add(message.MessageId, await VkBot.ReplyAsync(bridge.VkId, msg, Program.MessagesIds[message.ReplyToMessage.MessageId]));
-                        }
-                        break;
-                    }
+                    //if (message.ForwardFrom != null)
+                    //{
+                    //    msg = Helpers.GetMessageTop(VkMessageType.Forwarded, sender, message.Text, message.ForwardFrom.Username.FirstCharToUpper());
+                    //}
+                    //if (message.ForwardFromChat != null)
+                    //{
+                    //    Log.Logger.Information("Joined.");
+                    //    msg = Helpers.GetMessageTop(VkMessageType.Forwarded, sender, message.Text, message.ForwardFromChat.Username.FirstCharToUpper());
+                    //}
+                    //if (message.ReplyToMessage != null)
+                    //{
+                    //    Log.Logger.Information(message.ReplyToMessage.From.Username);
+                    //    msg = Helpers.GetMessageTop(VkMessageType.Text, sender, message.Text, message.ReplyToMessage.From.Username).FirstCharToUpper();
+                    //    foreach (var bridge in Program.Bridges)
+                    //    {
+                    //        Program.MessagesIds.Add(message.MessageId, await VkBot.ReplyAsync(bridge.VkId, msg, Program.MessagesIds[message.ReplyToMessage.MessageId]));
+                    //    }
+                    //    break;
+                    //}
 
                     foreach (var bridge in Program.Bridges)
                     {
                         Program.MessagesIds.Add(message.MessageId, await VkBot.SendMessageAsync(bridge.VkId, msg));
-                        Console.WriteLine("ADDED");
                     }
                     break;
                 case MessageType.Photo:

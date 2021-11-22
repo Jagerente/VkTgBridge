@@ -219,15 +219,15 @@ namespace GenshinAcademyBridge.Modules
                 switch (userUpdate.Message.GetMessageType())
                 {
                     case VkMessageType.Text:
-                        if (userUpdate.Message.ReplyMessage != null)
-                        {
-                            foreach (var bridge in Program.Bridges)
-                            {
-                                Console.WriteLine((long)userUpdate.Message.ReplyMessage.ConversationMessageId);
-                                Program.MessagesIds.Add((long)userUpdate.Message.ConversationMessageId, TgBot.ReplyAsync(bridge.TgId, Helpers.GetMessageTop(VkMessageType.Text, sender, message), Program.MessagesIds[(long)userUpdate.Message.ReplyMessage.ConversationMessageId]).Result);
-                            }
-                            break;
-                        }
+                        //if (userUpdate.Message.ReplyMessage != null)
+                        //{
+                        //    foreach (var bridge in Program.Bridges)
+                        //    {
+                        //        Console.WriteLine((long)userUpdate.Message.ReplyMessage.ConversationMessageId);
+                        //        Program.MessagesIds.Add((long)userUpdate.Message.ConversationMessageId, TgBot.ReplyAsync(bridge.TgId, Helpers.GetMessageTop(VkMessageType.Text, sender, message), Program.MessagesIds[(long)userUpdate.Message.ReplyMessage.ConversationMessageId]).Result);
+                        //    }
+                        //    break;
+                        //}
 
                         foreach (var bridge in Program.Bridges)
                         {
