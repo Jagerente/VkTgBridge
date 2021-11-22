@@ -8,47 +8,23 @@ using Telegram.Bot;
 using Telegram.Bot.Args;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
+using GenshinAcademyBridge.Configuration;
 
 namespace GenshinAcademyBridge.Modules
 {
-    public class TgBot
+    public class TgBot : IChat
     {
-        private const string TgConfigPath = ChatBridgeService.ConfigPath + "tgConfig.json";
+        private readonly TgConfiguration _config;
+        private readonly ILogger _logger;
 
         public static TelegramBotClient TgApi { get; private set; }
 
-        public static Configuration.TgConfiguration TgConfig { get; private set; }
-
-
-        public TgBot()
+        public TgBot(ILogger logger, TgConfiguration configuration)
         {
-            SetupTgAsync();
+            _logger = logger;
+            _config = configuration;
+            TgApi = new TelegramBotClient(_config.Token);
         }
-
-        private static async void SetupTgAsync()
-        {
-            Helpers.GetConfig(TgConfigPath);
-
-            TgConfig = JsonStorage.RestoreObject<Configuration.TgConfiguration>(TgConfigPath);
-
-            TgApi = new TelegramBotClient(TgConfig.Token);
-            var me = await TgApi.GetMeAsync();
-            Serilog.Log.Information($"Telegram Bot has started! {me.Username}:{me.Id}");
-
-            using var cts = new CancellationTokenSource();
-
-            var receiverOptions = new ReceiverOptions
-            {
-                AllowedUpdates = new[] { Telegram.Bot.Types.Enums.UpdateType.Message }, // Receiving messages only
-                ThrowPendingUpdates = true
-            };
-            TgApi.StartReceiving(
-                TgHandlers.HandleUpdateAsync,
-                TgHandlers.HandleErrorAsync,
-                receiverOptions
-            );
-        }
-
 
         public static async Task<long> SendMessageAsync(long conversationId, string message)
         {
@@ -125,6 +101,30 @@ namespace GenshinAcademyBridge.Modules
             await TgApi.SendPollAsync(conversationId, $"{question}", options, isAnonymous, allowsMultipleAnswers: allowsMultipleAnswers);
 
             Serilog.Log.Information($"Sent poll to TG.");
+        }
+
+        public async Task InitializeAsync()
+        {
+            User me = await TgApi.GetMeAsync();
+            _logger.Information($"Telegram Bot initialized as {me.Username}:{me.Id}");
+        }
+
+        public async Task RunAsync()
+        {
+            await Task.CompletedTask;
+            var receiverOptions = new ReceiverOptions
+            {
+                AllowedUpdates = new[] { Telegram.Bot.Types.Enums.UpdateType.Message }, // Receiving messages only
+                ThrowPendingUpdates = true
+            };
+            var cts = new CancellationTokenSource();
+            TgApi.StartReceiving(
+                TgHandlers.HandleUpdateAsync,
+                TgHandlers.HandleErrorAsync,
+                receiverOptions,
+                cts.Token
+            );
+            _logger.Information("Telegram chat started listening...");
         }
     }
 }

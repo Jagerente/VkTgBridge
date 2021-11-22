@@ -1,4 +1,7 @@
-﻿using GenshinAcademyBridge.Extensions;
+﻿using GenshinAcademyBridge.Configuration;
+using GenshinAcademyBridge.Extensions;
+using Microsoft.Extensions.DependencyInjection;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,32 +22,22 @@ using VkNet.Model.RequestParams;
 
 namespace GenshinAcademyBridge.Modules
 {
-    public class VkBot
+    public class VkBot : IChat
     {
+        private readonly VkConfiguration _config;
+        private readonly ILogger _logger;
+
         public static VkApi VkApi { get; private set; }
 
-        public const string VkConfigPath = ChatBridgeService.ConfigPath + "vkConfig.json";
 
-        public static Configuration.VkConfiguration VkConfig;
-
-        public VkBot(VkApi api)
+        public VkBot(
+            ILogger logger,
+            IServiceCollection services,
+            VkConfiguration configuration)
         {
-            VkApi = api;
-            SetupVk();
-            var cancellationTokenSource = new CancellationTokenSource();
-            if (VkApi.IsAuthorizedAsUser())
-            {
-                UserLongPoll userLongPoll = VkApi.StartUserLongPollAsync(UserLongPollConfiguration.Default, cancellationTokenSource.Token);
-
-                StartReceiving(userLongPoll.AsChannelReader(), GetUserUpdates);
-            }
-            else if (VkApi.IsAuthorizedAsGroup())
-            {
-                GroupLongPoll groupLongPoll = VkApi.StartGroupLongPollAsync(GroupLongPollConfiguration.Default,
-                    cancellationTokenSource.Token);
-
-                StartReceiving(groupLongPoll.AsChannelReader(), GetGroupUpdates);
-            }
+            _config = configuration;
+            _logger = logger;
+            VkApi = new VkApi(services);
         }
 
         private static async Task StartReceiving<TUpdate>(ChannelReader<TUpdate> channelReader, Action<TUpdate> updateAction)
@@ -55,22 +48,6 @@ namespace GenshinAcademyBridge.Modules
             {
                 updateAction(update);
             }
-        }
-
-        private static void SetupVk()
-        {
-            Helpers.GetConfig(VkConfigPath);
-
-            VkConfig = JsonStorage.RestoreObject<Configuration.VkConfiguration>(VkConfigPath);
-
-            VkApi.Authorize(new ApiAuthParams
-            {
-                AccessToken = VkConfig.Token
-            });
-
-            VkApi.VkApiVersion.SetVersion(5, 131);
-
-            Serilog.Log.Information($"VK Bot {VkApi} has started!");
         }
 
         public static async Task<long> SendMessageAsync(long conversationId, string message)
@@ -300,5 +277,31 @@ namespace GenshinAcademyBridge.Modules
 
         }
 
+        public async Task InitializeAsync()
+        {
+            await VkApi.AuthorizeAsync(new ApiAuthParams
+            {
+                AccessToken = _config.Token
+            });
+
+            VkApi.VkApiVersion.SetVersion(5, 131);
+
+            _logger.Information($"VK Chat initialized {VkApi}");
+        }
+
+        public async Task RunAsync()
+        {
+            if (VkApi.IsAuthorizedAsUser())
+            {
+                UserLongPoll userLongPoll = VkApi.StartUserLongPollAsync(UserLongPollConfiguration.Default);
+                StartReceiving(userLongPoll.AsChannelReader(), GetUserUpdates);
+            }
+            else if (VkApi.IsAuthorizedAsGroup())
+            {
+                GroupLongPoll groupLongPoll = VkApi.StartGroupLongPollAsync(GroupLongPollConfiguration.Default);
+                StartReceiving(groupLongPoll.AsChannelReader(), GetGroupUpdates);
+            }
+            _logger.Information("Vk Chat started listening...");
+        }
     }
 }
