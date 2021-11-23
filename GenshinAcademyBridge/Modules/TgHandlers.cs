@@ -74,7 +74,7 @@ namespace GenshinAcademyBridge.Modules
 
                     //Console.WriteLine(message.ForwardSenderName);
 
-                    msg = Helpers.GetMessageTop(VkMessageType.Text, sender, message.Text);
+                    msg = Helpers.GetMessageTop(BridgeMessageType.Text, sender, message.Text);
 
                     //if (message.ForwardFrom != null)
                     //{
@@ -102,7 +102,7 @@ namespace GenshinAcademyBridge.Modules
                     }
                     break;
                 case MessageType.Photo:
-                    msg = Helpers.GetMessageTop(VkMessageType.Photo, sender, message.Caption);
+                    msg = Helpers.GetMessageTop(BridgeMessageType.Photo, sender, message.Caption);
                     fileId = message.Photo.LastOrDefault().FileId;
                     fileInfo = await botClient.GetFileAsync(fileId);
                     if (!Directory.Exists("resources")) Directory.CreateDirectory("resources");
@@ -120,7 +120,7 @@ namespace GenshinAcademyBridge.Modules
                     }
                     break;
                 case MessageType.Video:
-                    msg = Helpers.GetMessageTop(VkMessageType.Video, sender, message.Caption, title: message.Video.FileName);
+                    msg = Helpers.GetMessageTop(BridgeMessageType.Video, sender, message.Caption, title: message.Video.FileName);
                     fileId = message.Video.Thumb.FileId;
                     fileInfo = await botClient.GetFileAsync(fileId);
                     if (!Directory.Exists("resources")) Directory.CreateDirectory("resources");
@@ -185,13 +185,13 @@ namespace GenshinAcademyBridge.Modules
                     //}
                     foreach (var bridge in Program.Bridges)
                     {
-                        await VkBot.SendStickerAsync(bridge.VkId, Helpers.GetMessageTop(VkMessageType.Sticker, sender), $"{filePath}.png");
+                        await VkBot.SendStickerAsync(bridge.VkId, Helpers.GetMessageTop(BridgeMessageType.Sticker, sender), $"{filePath}.png");
                     }
                     break;
                 case MessageType.Poll:
                     foreach (var bridge in Program.Bridges)
                     {
-                        await VkBot.SendMessageAsync(bridge.VkId, Helpers.GetMessageTop(VkMessageType.Poll, sender));
+                        await VkBot.SendMessageAsync(bridge.VkId, Helpers.GetMessageTop(BridgeMessageType.Poll, sender));
                         await VkBot.SendPollAsync(bridge.VkId, message.Poll.Question, message.Poll.Options.Select(x => x.Text).ToArray(), message.Poll.IsAnonymous, message.Poll.AllowsMultipleAnswers);
                     }
                     break;

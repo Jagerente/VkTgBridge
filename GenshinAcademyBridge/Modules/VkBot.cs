@@ -107,13 +107,13 @@ namespace GenshinAcademyBridge.Modules
                 string message = groupUpdate.MessageNew.Message.Text;
                 switch (groupUpdate.MessageNew.Message.GetMessageType())
                 {
-                    case VkMessageType.Text:
+                    case BridgeMessageType.Text:
                         foreach (var bridge in Program.Bridges)
                         {
-                            TgBot.SendMessageAsync(bridge.TgId, Helpers.GetMessageTop(VkMessageType.Text, sender, message));
+                            TgBot.SendMessageAsync(bridge.TgId, Helpers.GetMessageTop(BridgeMessageType.Text, sender, message));
                         }
                         break;
-                    case VkMessageType.Photo:
+                    case BridgeMessageType.Photo:
                         foreach (var attachment in groupUpdate.MessageNew.Message.Attachments)
                         {
                             var tag = attachment.Instance.ToString();
@@ -124,15 +124,15 @@ namespace GenshinAcademyBridge.Modules
                         }
                         foreach (var bridge in Program.Bridges)
                         {
-                            TgBot.SendPhotoAsync(bridge.TgId, Helpers.GetMessageTop(VkMessageType.Photo, sender, message), urls);
+                            TgBot.SendPhotoAsync(bridge.TgId, Helpers.GetMessageTop(BridgeMessageType.Photo, sender, message), urls);
                         }
                         break;
-                    case VkMessageType.Video:
+                    case BridgeMessageType.Video:
                         if (message != string.Empty)
                         {
                             foreach (var bridge in Program.Bridges)
                             {
-                                TgBot.SendMessageAsync(bridge.TgId, Helpers.GetMessageTop(VkMessageType.Text, sender, message));
+                                TgBot.SendMessageAsync(bridge.TgId, Helpers.GetMessageTop(BridgeMessageType.Text, sender, message));
                             }
                         }
                         foreach (var attachment in groupUpdate.MessageNew.Message.Attachments)
@@ -147,31 +147,31 @@ namespace GenshinAcademyBridge.Modules
                                 urls = urls.Append($"{video.Image.Last().Url.AbsoluteUri}").ToArray();
                                 foreach (var bridge in Program.Bridges)
                                 {
-                                    TgBot.SendVideoAsync(bridge.TgId, Helpers.GetMessageTop(VkMessageType.Video, sender, title: string.Join("\n", titles)), urls);
+                                    TgBot.SendVideoAsync(bridge.TgId, Helpers.GetMessageTop(BridgeMessageType.Video, sender, title: string.Join("\n", titles)), urls);
                                 }
                             }
                         }
                         break;
-                    case VkMessageType.Sticker:
+                    case BridgeMessageType.Sticker:
                         var sticker = ((Sticker) groupUpdate.MessageNew.Message.Attachments.FirstOrDefault().Instance).Images.LastOrDefault().Url.ToString();
                         foreach (var bridge in Program.Bridges)
                         {
-                            TgBot.SendStickerAsync(bridge.TgId, Helpers.GetMessageTop(VkMessageType.Sticker, sender), sticker);
+                            TgBot.SendStickerAsync(bridge.TgId, Helpers.GetMessageTop(BridgeMessageType.Sticker, sender), sticker);
                         }
                         break;
-                    case VkMessageType.Poll:
+                    case BridgeMessageType.Poll:
                         if (message != string.Empty)
                         {
                             foreach (var bridge in Program.Bridges)
                             {
-                                TgBot.SendMessageAsync(bridge.TgId, Helpers.GetMessageTop(VkMessageType.Text, sender, message));
+                                TgBot.SendMessageAsync(bridge.TgId, Helpers.GetMessageTop(BridgeMessageType.Text, sender, message));
                             }
                         }
 
                         var poll = (Poll) groupUpdate.MessageNew.Message.Attachments.FirstOrDefault().Instance;
                         foreach (var bridge in Program.Bridges)
                         {
-                            TgBot.SendPollAsync(bridge.TgId, Helpers.GetMessageTop(VkMessageType.Poll, sender, poll.Question), poll.Answers.Select(x => x.Text).ToArray(), poll.Anonymous, poll.Multiple);
+                            TgBot.SendPollAsync(bridge.TgId, Helpers.GetMessageTop(BridgeMessageType.Poll, sender, poll.Question), poll.Answers.Select(x => x.Text).ToArray(), poll.Anonymous, poll.Multiple);
                         }
                         break;
                 }
@@ -195,7 +195,7 @@ namespace GenshinAcademyBridge.Modules
                 string message = userUpdate.Message.Text;
                 switch (userUpdate.Message.GetMessageType())
                 {
-                    case VkMessageType.Text:
+                    case BridgeMessageType.Text:
                         //if (userUpdate.Message.ReplyMessage != null)
                         //{
                         //    foreach (var bridge in Program.Bridges)
@@ -208,10 +208,10 @@ namespace GenshinAcademyBridge.Modules
 
                         foreach (var bridge in Program.Bridges)
                         {
-                            Program.MessagesIds.Add((long)userUpdate.Message.ConversationMessageId, TgBot.SendMessageAsync(bridge.TgId, Helpers.GetMessageTop(VkMessageType.Text, sender, message)).Result);
+                            Program.MessagesIds.Add((long)userUpdate.Message.ConversationMessageId, TgBot.SendMessageAsync(bridge.TgId, Helpers.GetMessageTop(BridgeMessageType.Text, sender, message)).Result);
                         }
                         break;
-                    case VkMessageType.Photo:
+                    case BridgeMessageType.Photo:
                         foreach (var attachment in userUpdate.Message.Attachments)
                         {
                             var tag = attachment.Instance.ToString();
@@ -222,15 +222,15 @@ namespace GenshinAcademyBridge.Modules
                         }
                         foreach (var bridge in Program.Bridges)
                         {
-                            TgBot.SendPhotoAsync(bridge.TgId, Helpers.GetMessageTop(VkMessageType.Photo, sender, message), urls);
+                            TgBot.SendPhotoAsync(bridge.TgId, Helpers.GetMessageTop(BridgeMessageType.Photo, sender, message), urls);
                         }
                         break;
-                    case VkMessageType.Video:
+                    case BridgeMessageType.Video:
                         if (message != string.Empty)
                         {
                             foreach (var bridge in Program.Bridges)
                             {
-                                TgBot.SendMessageAsync(bridge.TgId, Helpers.GetMessageTop(VkMessageType.Text, sender, message));
+                                TgBot.SendMessageAsync(bridge.TgId, Helpers.GetMessageTop(BridgeMessageType.Text, sender, message));
                             }
                         }
                         foreach (var attachment in userUpdate.Message.Attachments)
@@ -245,31 +245,31 @@ namespace GenshinAcademyBridge.Modules
                                 urls = urls.Append($"{video.Image.Last().Url.AbsoluteUri}").ToArray();
                                 foreach (var bridge in Program.Bridges)
                                 {
-                                    TgBot.SendVideoAsync(bridge.TgId, Helpers.GetMessageTop(VkMessageType.Video, sender, title: string.Join("\n", titles)), urls);
+                                    TgBot.SendVideoAsync(bridge.TgId, Helpers.GetMessageTop(BridgeMessageType.Video, sender, title: string.Join("\n", titles)), urls);
                                 }
                             }
                         }
                         break;
-                    case VkMessageType.Sticker:
+                    case BridgeMessageType.Sticker:
                         var sticker = ((Sticker)userUpdate.Message.Attachments.FirstOrDefault().Instance).Images.LastOrDefault().Url.ToString();
                         foreach (var bridge in Program.Bridges)
                         {
-                            TgBot.SendStickerAsync(bridge.TgId, Helpers.GetMessageTop(VkMessageType.Sticker, sender), sticker);
+                            TgBot.SendStickerAsync(bridge.TgId, Helpers.GetMessageTop(BridgeMessageType.Sticker, sender), sticker);
                         }
                         break;
-                    case VkMessageType.Poll:
+                    case BridgeMessageType.Poll:
                         if (message != string.Empty)
                         {
                             foreach (var bridge in Program.Bridges)
                             {
-                                TgBot.SendMessageAsync(bridge.TgId, Helpers.GetMessageTop(VkMessageType.Text, sender, message));
+                                TgBot.SendMessageAsync(bridge.TgId, Helpers.GetMessageTop(BridgeMessageType.Text, sender, message));
                             }
                         }
 
                         var poll = (Poll)userUpdate.Message.Attachments.FirstOrDefault().Instance;
                         foreach (var bridge in Program.Bridges)
                         {
-                            TgBot.SendPollAsync(bridge.TgId, Helpers.GetMessageTop(VkMessageType.Poll, sender, poll.Question), poll.Answers.Select(x => x.Text).ToArray(), poll.Anonymous, poll.Multiple);
+                            TgBot.SendPollAsync(bridge.TgId, Helpers.GetMessageTop(BridgeMessageType.Poll, sender, poll.Question), poll.Answers.Select(x => x.Text).ToArray(), poll.Anonymous, poll.Multiple);
                         }
                         break;
                 }

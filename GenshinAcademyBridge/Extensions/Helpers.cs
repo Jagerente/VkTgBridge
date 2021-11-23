@@ -24,33 +24,33 @@ namespace GenshinAcademyBridge.Extensions
             }
         }
 
-        public static string GetMessageTop(VkMessageType messageType, string sender, string text = "", string reply = "", string title = "")
+        public static string GetMessageTop(BridgeMessageType messageType, string sender, string text = "", string reply = "", string title = "")
         {
             switch (messageType)
             {
-                case VkMessageType.Text:
+                case BridgeMessageType.Text:
                     return $"{sender} 💬\n{text}";
-                case VkMessageType.Reply:
+                case BridgeMessageType.Reply:
                     return $"Reply to {reply} 💬\n{text}";
-                case VkMessageType.Forwarded:
+                case BridgeMessageType.Forwarded:
                     return $"{sender} forward from {reply} 💬\n{text}";
-                case VkMessageType.Photo:
+                case BridgeMessageType.Photo:
                     return $"{sender} 💬\n{text}";
-                case VkMessageType.Audio:
+                case BridgeMessageType.Audio:
                     return $"{sender} 💬\n{text}";
-                case VkMessageType.Video:
+                case BridgeMessageType.Video:
                     return $"{sender} sent video 🎬\n{title}";
-                case VkMessageType.Voice:
+                case BridgeMessageType.Voice:
                     return $"{sender} sent voice 🎙\n{text}";
-                case VkMessageType.Document:
+                case BridgeMessageType.Document:
                     return $"{sender} 💬\n{text}";
-                case VkMessageType.ChatMembersAdded:
+                case BridgeMessageType.ChatMembersAdded:
                     return $"{sender} joined.";
-                case VkMessageType.ChatMemberLeft:
+                case BridgeMessageType.ChatMemberLeft:
                     return $"{sender} left.";
-                case VkMessageType.Poll:
+                case BridgeMessageType.Poll:
                     return $"{sender} created a poll 📝\n{text}";
-                case VkMessageType.Sticker:
+                case BridgeMessageType.Sticker:
                     return $"{sender} 💬";
                 default:
                     return string.Empty;
@@ -60,7 +60,7 @@ namespace GenshinAcademyBridge.Extensions
 
     public static class VkExtensions
     {
-        public static VkMessageType GetMessageType(this VkNet.Model.Message msg)
+        public static BridgeMessageType GetMessageType(this VkNet.Model.Message msg)
         {
             if (msg.Attachments.Count > 0)
             {
@@ -70,43 +70,43 @@ namespace GenshinAcademyBridge.Extensions
                     Console.WriteLine(tag);
                     if (tag.Contains("photo"))
                     {
-                        return VkMessageType.Photo;
+                        return BridgeMessageType.Photo;
                     }
                     else if (tag.Contains("video"))
                     {
-                        return VkMessageType.Video;
+                        return BridgeMessageType.Video;
                     }
                     else if (tag.Contains("audio_message"))
                     {
-                        return VkMessageType.Voice;
+                        return BridgeMessageType.Voice;
                     }
                     else if (tag.Contains("audio"))
                     {
-                        return VkMessageType.Audio;
+                        return BridgeMessageType.Audio;
                     }
                     else if (tag.Contains("doc"))
                     {
-                        return VkMessageType.Document;
+                        return BridgeMessageType.Document;
                     }
                     else if (tag.Contains("poll"))
                     {
-                        return VkMessageType.Poll;
+                        return BridgeMessageType.Poll;
                     }
                     else if (tag.Contains("sticker"))
                     {
-                        return VkMessageType.Sticker;
+                        return BridgeMessageType.Sticker;
                     }
                 }
             }
             else if (msg.Text != string.Empty)
             {
-                return VkMessageType.Text;
+                return BridgeMessageType.Text;
             }
-            return VkMessageType.Unknown;
+            return BridgeMessageType.Unknown;
         }
     }
 
-    public enum VkMessageType
+    public enum BridgeMessageType
     {
         Unknown = 0,
         Text = 1,
