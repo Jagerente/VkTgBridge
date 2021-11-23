@@ -109,7 +109,7 @@ namespace GenshinAcademyBridge.Modules
             _logger.Information($"Telegram Bot initialized as {me.Username}:{me.Id}");
         }
 
-        public async Task RunAsync()
+        public async Task StartListenAsync()
         {
             await Task.CompletedTask;
             var receiverOptions = new ReceiverOptions

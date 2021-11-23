@@ -9,6 +9,6 @@ namespace GenshinAcademyBridge
     public interface IChat
     {
         Task InitializeAsync();
-        Task RunAsync();
+        Task StartListenAsync();
     }
 }

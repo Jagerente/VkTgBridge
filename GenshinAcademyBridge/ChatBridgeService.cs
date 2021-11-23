@@ -60,7 +60,7 @@ namespace GenshinAcademyBridge
         public async Task StartAsync(CancellationToken cancellationToken)
         {
             await Task.WhenAll(Chats.Select(x => x.InitializeAsync()));
-            await Task.WhenAll(Chats.Select(x => x.RunAsync()));
+            await Task.WhenAll(Chats.Select(x => x.StartListenAsync()));
             _logger.Information("Application started.");
             while (true)
             {

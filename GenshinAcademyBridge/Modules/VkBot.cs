@@ -289,7 +289,7 @@ namespace GenshinAcademyBridge.Modules
             _logger.Information($"VK Chat initialized {VkApi}");
         }
 
-        public async Task RunAsync()
+        public async Task StartListenAsync()
         {
             if (VkApi.IsAuthorizedAsUser())
             {
