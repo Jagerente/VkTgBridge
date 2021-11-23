@@ -9,6 +9,7 @@ using Telegram.Bot.Args;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
 using GenshinAcademyBridge.Configuration;
+using System.Reactive.Subjects;
 
 namespace GenshinAcademyBridge.Modules
 {
@@ -17,6 +18,7 @@ namespace GenshinAcademyBridge.Modules
         private readonly TgConfiguration _config;
         private readonly ILogger _logger;
 
+        public static Subject<TextMessage> subject;
         public static TelegramBotClient TgApi { get; private set; }
 
         public TgBot(ILogger logger, TgConfiguration configuration)
@@ -109,7 +111,7 @@ namespace GenshinAcademyBridge.Modules
             _logger.Information($"Telegram Bot initialized as {me.Username}:{me.Id}");
         }
 
-        public async Task StartListenAsync()
+        public async Task<IObservable<TextMessage>> StartListenAsync()
         {
             await Task.CompletedTask;
             var receiverOptions = new ReceiverOptions
@@ -118,6 +120,8 @@ namespace GenshinAcademyBridge.Modules
                 ThrowPendingUpdates = true
             };
             var cts = new CancellationTokenSource();
+
+            subject = new Subject<TextMessage>();
             TgApi.StartReceiving(
                 TgHandlers.HandleUpdateAsync,
                 TgHandlers.HandleErrorAsync,
@@ -125,6 +129,7 @@ namespace GenshinAcademyBridge.Modules
                 cts.Token
             );
             _logger.Information("Telegram chat started listening...");
+            return subject;
         }
     }
 }

@@ -12,6 +12,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Serilog;
 
+using System.Reactive.Linq;
+
 namespace GenshinAcademyBridge
 {
     public class ChatBridgeService : IHostedService
@@ -57,13 +59,39 @@ namespace GenshinAcademyBridge
                 Program.Bridges.Add(JsonStorage.RestoreObject<Bridge>(bridge));
             }
         }
+
+        private class MyObserver : IObserver<TextMessage>
+        {
+            public void OnCompleted()
+            {
+
+            }
+
+            public void OnError(Exception error)
+            {
+                Console.WriteLine("Error");
+                throw error;
+            }
+
+            public void OnNext(TextMessage value)
+            {
+                Console.WriteLine($"Received message; {value.Sender} - {value.Message}");
+            }
+        }
+
         public async Task StartAsync(CancellationToken cancellationToken)
         {
             await Task.WhenAll(Chats.Select(x => x.InitializeAsync()));
-            await Task.WhenAll(Chats.Select(x => x.StartListenAsync()));
+            IEnumerable<IObservable<TextMessage>> observables = await Task.WhenAll(Chats.Select(x => x.StartListenAsync()));
+            var idk = Observable.Concat(observables);
+            var sub = idk.Subscribe(new MyObserver());
             _logger.Information("Application started.");
             while (true)
             {
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    sub.Dispose();
+                }
                 cancellationToken.ThrowIfCancellationRequested();
                 await Task.Delay(1000, cancellationToken);
             }

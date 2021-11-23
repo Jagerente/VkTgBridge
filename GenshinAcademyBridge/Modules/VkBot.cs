@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Reactive.Subjects;
 using System.Text;
 using System.Threading;
 using System.Threading.Channels;
@@ -27,6 +28,7 @@ namespace GenshinAcademyBridge.Modules
         private readonly VkConfiguration _config;
         private readonly ILogger _logger;
 
+        public static Subject<TextMessage> subject;
         public static VkApi VkApi { get; private set; }
 
 
@@ -105,6 +107,7 @@ namespace GenshinAcademyBridge.Modules
                 string[] urls = new string[] { };
 
                 string message = groupUpdate.MessageNew.Message.Text;
+                subject.OnNext(new TextMessage(sender, message));
                 switch (groupUpdate.MessageNew.Message.GetMessageType())
                 {
                     case BridgeMessageType.Text:
@@ -193,6 +196,7 @@ namespace GenshinAcademyBridge.Modules
                 string[] urls = new string[] { };
 
                 string message = userUpdate.Message.Text;
+                subject.OnNext(new TextMessage(sender, message));
                 switch (userUpdate.Message.GetMessageType())
                 {
                     case BridgeMessageType.Text:
@@ -289,8 +293,9 @@ namespace GenshinAcademyBridge.Modules
             _logger.Information($"VK Chat initialized {VkApi}");
         }
 
-        public async Task StartListenAsync()
+        public async Task<IObservable<TextMessage>> StartListenAsync()
         {
+            subject = new Subject<TextMessage>();
             if (VkApi.IsAuthorizedAsUser())
             {
                 UserLongPoll userLongPoll = VkApi.StartUserLongPollAsync(UserLongPollConfiguration.Default);
@@ -302,6 +307,7 @@ namespace GenshinAcademyBridge.Modules
                 StartReceiving(groupLongPoll.AsChannelReader(), GetGroupUpdates);
             }
             _logger.Information("Vk Chat started listening...");
+            return subject;
         }
     }
 }
