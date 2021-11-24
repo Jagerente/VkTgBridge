@@ -48,17 +48,17 @@ namespace ChatBridge.Hosting
 
 
             _logger.LogInformation("Starting listening Chats");
-            IEnumerable<IDisposable> activeSubs = null;
+            List<IDisposable> activeSubs = null;
             try
             {
                 IEnumerable<IObservable<BridgeMessage>> observables = await Task.WhenAll(Chats.Select(x => x.StartListenAsync(cancellationToken)));
 
                 var observer = new BridgeWorkerObserver(Chats, _serviceProvider.GetService<ILogger<BridgeWorkerObserver>>());
-                foreach(var idk in observables)
+                foreach(var messageObservable in observables)
                 {
-                    idk.Subscribe(observer);
+                    IDisposable sub = messageObservable.Subscribe(observer);
+                    activeSubs.Add(sub);
                 }
-                //activeSubs = observables.Select(x => x.Subscribe(observer));
             }
             catch (Exception ex)
             {
@@ -99,7 +99,6 @@ namespace ChatBridge.Hosting
             {
                 _chats = chats;
                 _logger = logger;
-                _logger.LogInformation("Created observer");
             }
 
             public void OnCompleted()
@@ -113,12 +112,9 @@ namespace ChatBridge.Hosting
 
             public void OnNext(BridgeMessage value)
             {
-                _logger.LogInformation("received");
                 //TODO: Maybe add lock?
-                //IEnumerable<IBridgeChat> chatsToSend = _chats.Where(x => x != value.SourceChat);
-
-                //Task.WhenAll(chatsToSend.Select(x => x.SendMessageAsync(value))).Wait();
-                _logger.LogInformation($"Received message: {value.Sender}: {value.Content.First().GetDataAsync().Result.ToString()}");
+                IEnumerable<IBridgeChat> chatsToSend = _chats.Where(x => x != value.SourceChat);
+                Task.WhenAll(chatsToSend.Select(x => x.SendMessageAsync(value))).Wait();
             }
         }
 

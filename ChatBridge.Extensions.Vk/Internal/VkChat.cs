@@ -68,32 +68,25 @@ namespace ChatBridge.Extensions.Vk.Internal
             string senderName = sender == null ? "Unknown" : $"{sender.FirstName} {sender.LastName}";
 
             return new BridgeMessage(this, senderName, new BridgeMessageContent[] { new CommonTextContent(message.Text) });
-            return null;
         }
 
         private async Task StartListeningUpdates(CancellationToken cancelToken)
         {
             ChannelReader<UserUpdate> channel = _longPoll.AsChannelReader();
-            _logger.LogInformation("Test");
 
             while (cancelToken.IsCancellationRequested == false)
             {
                 bool canContinue = await channel.WaitToReadAsync(cancelToken);
-                _logger.LogInformation("Test1");
                 if (!canContinue)
                 {
                     break;
                 }
-                _logger.LogInformation("Test2");
                 UserUpdate update = await channel.ReadAsync(cancelToken);
-                _logger.LogInformation("Test3");
                 BridgeMessage message = await ReadMessageFromUpdateAsync(update);
-                _logger.LogInformation("Test4");
                 if (message == null)
                 {
                     continue;
                 }
-                _logger.LogInformation("Test5");
                 _mesageSubject.OnNext(message);
             }
         }
@@ -121,8 +114,7 @@ namespace ChatBridge.Extensions.Vk.Internal
         public async Task<IObservable<BridgeMessage>> StartListenAsync(CancellationToken cancelToken = default)
         {
             _mesageSubject = new Subject<BridgeMessage>();
-            _logger.LogInformation(_api.IsAuthorizedAsUser().ToString());
-             _longPoll = _api.StartUserLongPollAsync(UserLongPollConfiguration.Default, cancelToken);
+            _longPoll = _api.StartUserLongPollAsync(UserLongPollConfiguration.Default, cancelToken);
 
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
             StartListeningUpdates(cancelToken);

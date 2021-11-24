@@ -14,6 +14,7 @@ using VkNet;
 using System.Threading.Tasks;
 using System.Linq;
 using ChatBridge.Extensions.Vk;
+using ChatBridge.Hosting;
 
 namespace GenshinAcademyBridge
 {
@@ -62,7 +63,7 @@ namespace GenshinAcademyBridge
 
                     builder.AddJsonFile("bridgeConfiguration.json");
                     builder.AddEnvironmentVariables();
-                    if(args.Length > 0)
+                    if (args.Length > 0)
                     {
                         builder.AddCommandLine(args);
                     }
@@ -82,31 +83,35 @@ namespace GenshinAcademyBridge
 
         public static async Task Main(string[] args)
         {
-            // MessagesIds = new Dictionary<long, long>();
-            var logger = new LoggerConfiguration()
-                .MinimumLevel
-                .Information()
-                .WriteTo
-                .Console()
-                .WriteTo
-                .File("log.txt",
-                    rollingInterval: RollingInterval.Day,
-                    rollOnFileSizeLimit: true)
-                .CreateLogger();
-            var host = ChatBridge.Hosting.ChatBridgeHost.CreateDefaultHost(
-                args,
-                (services, configuration) =>
-                {
-                    services.AddLogging(x =>
-                    {
-                        x.ClearProviders();
-                        x.SetMinimumLevel(LogLevel.Information);
-                        x.AddSerilog();
-                    });
-                    services.AddVkChatBridge(configuration);
-                }, null)
-                .UseSerilog(logger)
-                .Build();//CreateHostBuilder(args).Build();
+            MessagesIds = new Dictionary<long, long>();
+            var host = CreateHostBuilder(args).Build();
+
+            //New version
+            //var host = ChatBridgeHost.CreateDefaultHost(
+            //    args,
+            //    (services, configuration) =>
+            //    {
+            //        services.AddLogging(x =>
+            //        {
+            //            x.ClearProviders();
+            //            x.AddSerilog();
+            //        });
+            //        services.AddVkChatBridge(configuration);
+            //    }, null)
+            //    .UseSerilog((ctx, config) =>
+            //    {
+            //        config
+            //            .MinimumLevel
+            //            .Information()
+            //            .WriteTo
+            //            .Console()
+            //            .WriteTo
+            //            .File("log.txt",
+            //                rollingInterval: RollingInterval.Day,
+            //                rollOnFileSizeLimit: true);
+            //    })
+            //    .Build()
+
             await host.RunAsync();
 
         }
