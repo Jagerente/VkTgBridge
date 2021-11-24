@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Interactive.Async" Version="5.0.0" />
+    <PackageReference Include="VkNet" Version="1.67.0" />
+    <PackageReference Include="VkNet.Extensions.Polling" Version="0.1.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ChatBridge\ChatBridge.csproj" />
+  </ItemGroup>
+
+</Project>

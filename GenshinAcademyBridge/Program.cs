@@ -4,6 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using System;
+using Serilog.Extensions.Logging;
 using System.Collections.Generic;
 using System.IO;
 using GenshinAcademyBridge.Configuration;
@@ -12,6 +13,7 @@ using Microsoft.Extensions.Hosting;
 using VkNet;
 using System.Threading.Tasks;
 using System.Linq;
+using ChatBridge.Extensions.Vk;
 
 namespace GenshinAcademyBridge
 {
@@ -80,10 +82,33 @@ namespace GenshinAcademyBridge
 
         public static async Task Main(string[] args)
         {
-            MessagesIds = new Dictionary<long, long>();
-            var host = CreateHostBuilder(args).Build();
-
+            // MessagesIds = new Dictionary<long, long>();
+            var logger = new LoggerConfiguration()
+                .MinimumLevel
+                .Information()
+                .WriteTo
+                .Console()
+                .WriteTo
+                .File("log.txt",
+                    rollingInterval: RollingInterval.Day,
+                    rollOnFileSizeLimit: true)
+                .CreateLogger();
+            var host = ChatBridge.Hosting.ChatBridgeHost.CreateDefaultHost(
+                args,
+                (services, configuration) =>
+                {
+                    services.AddLogging(x =>
+                    {
+                        x.ClearProviders();
+                        x.SetMinimumLevel(LogLevel.Information);
+                        x.AddSerilog();
+                    });
+                    services.AddVkChatBridge(configuration);
+                }, null)
+                .UseSerilog(logger)
+                .Build();//CreateHostBuilder(args).Build();
             await host.RunAsync();
+
         }
     }
 }
