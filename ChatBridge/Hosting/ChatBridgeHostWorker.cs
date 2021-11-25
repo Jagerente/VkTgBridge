@@ -48,7 +48,7 @@ namespace ChatBridge.Hosting
 
 
             _logger.LogInformation("Starting listening Chats");
-            List<IDisposable> activeSubs = null;
+            List<IDisposable> activeSubs = new List<IDisposable>();
             try
             {
                 IEnumerable<IObservable<BridgeMessage>> observables = await Task.WhenAll(Chats.Select(x => x.StartListenAsync(cancellationToken)));
