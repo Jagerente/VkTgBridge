@@ -13,7 +13,7 @@ namespace ChatBridge.Extensions.Telegram
         /// Id of Chat
         /// </summary>
         [JsonPropertyName("chatId")]
-        public int? ChatId { get; set; }
+        public long? ChatId { get; set; }
 
         /// <summary>
         /// Access token
