@@ -20,6 +20,7 @@ using VkNet.Enums;
 using VkNet.Enums.Filters;
 using ChatBridge.MessageContent;
 using VkNet.Extensions.Polling.Models.Update;
+using VkNet.Model.RequestParams;
 
 namespace ChatBridge.Extensions.Vk.Internal
 {
@@ -93,7 +94,7 @@ namespace ChatBridge.Extensions.Vk.Internal
 
         public async Task InitializeAsync(CancellationToken cancelToken = default)
         {
-            _logger.LogInformation("Start initializing");
+            _logger.LogInformation("Start initializing Vk Chat");
             await _api.AuthorizeAsync(new ApiAuthParams()
             {
                 AccessToken = _configuration.Token
@@ -103,16 +104,24 @@ namespace ChatBridge.Extensions.Vk.Internal
             GetConversationMembersResult chatMembers = await _api.Messages.GetConversationMembersAsync(_peerId);
             _chatUsers = new List<User>(chatMembers.Profiles);
 
-            _logger.LogInformation("Initializing complete successfully");
+            _logger.LogInformation("Initializing Vk Chat complete successfully");
         }
 
-        public Task SendMessageAsync(BridgeMessage message, CancellationToken cancelToken = default)
+        public async Task SendMessageAsync(BridgeMessage message, CancellationToken cancelToken = default)
         {
-            throw new NotImplementedException();
+            var content = (string)await message.FirstOrDefault().GetDataAsync();
+            await _api.Messages.SendAsync(new MessagesSendParams()
+            {
+                PeerId = _peerId,
+                Message = content,
+                RandomId = _random.Next(int.MaxValue)
+            });
         }
 
         public async Task<IObservable<BridgeMessage>> StartListenAsync(CancellationToken cancelToken = default)
         {
+            _logger.LogInformation("Running Vk Chat...");
+
             _mesageSubject = new Subject<BridgeMessage>();
             _longPoll = _api.StartUserLongPollAsync(UserLongPollConfiguration.Default, cancelToken);
 
@@ -121,6 +130,8 @@ namespace ChatBridge.Extensions.Vk.Internal
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
 
             await Task.CompletedTask;
+
+            _logger.LogInformation("Vk Chat is running.");
             return _mesageSubject;
         }
     }
