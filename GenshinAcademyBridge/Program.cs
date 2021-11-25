@@ -15,6 +15,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using ChatBridge.Extensions.Vk;
 using ChatBridge.Hosting;
+using ChatBridge.Extensions.Telegram;
 
 namespace GenshinAcademyBridge
 {
@@ -83,34 +84,35 @@ namespace GenshinAcademyBridge
 
         public static async Task Main(string[] args)
         {
-            MessagesIds = new Dictionary<long, long>();
-            var host = CreateHostBuilder(args).Build();
+            //MessagesIds = new Dictionary<long, long>();
+            //var host = CreateHostBuilder(args).Build();
 
             //New version
-            //var host = ChatBridgeHost.CreateDefaultHost(
-            //    args,
-            //    (services, configuration) =>
-            //    {
-            //        services.AddLogging(x =>
-            //        {
-            //            x.ClearProviders();
-            //            x.AddSerilog();
-            //        });
-            //        services.AddVkChatBridge(configuration);
-            //    }, null)
-            //    .UseSerilog((ctx, config) =>
-            //    {
-            //        config
-            //            .MinimumLevel
-            //            .Information()
-            //            .WriteTo
-            //            .Console()
-            //            .WriteTo
-            //            .File("log.txt",
-            //                rollingInterval: RollingInterval.Day,
-            //                rollOnFileSizeLimit: true);
-            //    })
-            //    .Build()
+            var host = ChatBridgeHost.CreateDefaultHost(
+                args,
+                (services, configuration) =>
+                {
+                    services.AddLogging(x =>
+                    {
+                        x.ClearProviders();
+                        x.AddSerilog();
+                    });
+                    services.AddVkChatBridge(configuration);
+                    services.AddTelegramChatBridge(configuration);
+                }, null)
+                .UseSerilog((ctx, config) =>
+                {
+                    config
+                        .MinimumLevel
+                        .Information()
+                        .WriteTo
+                        .Console()
+                        .WriteTo
+                        .File("log.txt",
+                            rollingInterval: RollingInterval.Day,
+                            rollOnFileSizeLimit: true);
+                })
+                .Build();
 
             await host.RunAsync();
 
