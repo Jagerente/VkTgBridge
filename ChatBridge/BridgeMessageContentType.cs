@@ -8,6 +8,18 @@ namespace ChatBridge
 {
     public enum BridgeMessageContentType
     {
-        Text
+        Unknown,
+        Text,
+        Photo,
+        Audio,
+        Video,
+        Voice,
+        Document,
+        Sticker,
+        ChatMembersAdded,
+        ChatMemberLeft,
+        Poll,
+        Reply,
+        Forwarded
     }
 }
