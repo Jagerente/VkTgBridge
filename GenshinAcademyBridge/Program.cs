@@ -104,13 +104,13 @@ namespace GenshinAcademyBridge
                 {
                     config
                         .MinimumLevel
-                        .Information()
+                            .Information()
                         .WriteTo
-                        .Console()
+                            .Console()
                         .WriteTo
-                        .File("log.txt",
-                            rollingInterval: RollingInterval.Day,
-                            rollOnFileSizeLimit: true);
+                            .File("log.txt",
+                                rollingInterval: RollingInterval.Day,
+                                rollOnFileSizeLimit: true);
                 })
                 .Build();
 
