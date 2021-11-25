@@ -26,6 +26,6 @@ namespace ChatBridge.Extensions.Telegram
         /// </summary>
         [JsonConverter(typeof(JsonStringEnumConverter))]
         [JsonPropertyName("ignoreMessageTypes")]
-        public IEnumerable<BridgeMessageContentType> IgnoreMessageTypes { get; set; }
+        public IEnumerable<BridgeMessageContentType> AllowMessageTypes { get; set; }
     }
 }
