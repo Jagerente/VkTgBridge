@@ -4,13 +4,16 @@ using System.Text.Json.Serialization;
 
 namespace ChatBridge.Extensions.Vk
 {
+    /// <summary>
+    /// Configuration for Vk Chat
+    /// </summary>
     public class VkChatConfiguration
     {
         /// <summary>
         /// Id of Chat on the account
         /// </summary>
         [JsonPropertyName("chatId")]
-        public int? ChatId { get; set; }
+        public long? ChatId { get; set; }
 
         /// <summary>
         /// Id of the group
