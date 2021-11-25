@@ -29,6 +29,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\ChatBridge.Extensions.Telegram\ChatBridge.Extensions.Telegram.csproj" />
     <ProjectReference Include="..\ChatBridge.Extensions.Vk\ChatBridge.Extensions.Vk.csproj" />
     <ProjectReference Include="..\ChatBridge\ChatBridge.csproj" />
   </ItemGroup>
