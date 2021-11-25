@@ -7,6 +7,9 @@ using ChatBridge.Extensions.Vk.Internal;
 
 namespace ChatBridge.Extensions.Vk
 {
+    /// <summary>
+    /// Set of extensions to add/configure Vk Chat
+    /// </summary>
     public static class ChatBridgeExtensions
     {
         private static void EnsureConfigIsFull(VkChatConfiguration config)
