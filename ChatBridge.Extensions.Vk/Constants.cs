@@ -4,9 +4,10 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace ChatBridge
+namespace ChatBridge.Extensions.Vk
 {
-    public static class ChatBridgeHostExtensions
+    public class Constants
     {
+        public const int GroupChatIdPrefix = 2000000000;
     }
 }

@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace ChatBridge.Hosting
 {
     /// <summary>
-    /// TODO
+    /// Provides ways to create redy-to-use <seealso cref="IHostBuilder"/> for Bridge to work out of box
     /// </summary>
     public static class ChatBridgeHost
     {

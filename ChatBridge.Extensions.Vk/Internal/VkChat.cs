@@ -1,29 +1,34 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reactive.Subjects;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-using VkNet;
-using VkNet.Model;
-using VkNet.Extensions.Polling;
-using VkNet.Extensions.Polling.Models.Configuration;
 using System.Reactive;
 using System.Reactive.Linq;
 using System.Threading.Channels;
-using VkNet.Model.GroupUpdate;
-using VkNet.Enums.SafetyEnums;
+
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+
+using ChatBridge.MessageContent;
+using VkNet;
+using VkNet.Model;
 using VkNet.Enums;
 using VkNet.Enums.Filters;
-using ChatBridge.MessageContent;
+using VkNet.Enums.SafetyEnums;
+using VkNet.Extensions.Polling;
+using VkNet.Extensions.Polling.Models.Configuration;
 using VkNet.Extensions.Polling.Models.Update;
+using VkNet.Model.GroupUpdate;
 using VkNet.Model.RequestParams;
 
 namespace ChatBridge.Extensions.Vk.Internal
 {
+    /// <summary>
+    /// Chat for Vk implementing <seealso cref="IBridgeChat"/> interface
+    /// </summary>
     internal class VkChat : IBridgeChat
     {
         private readonly Random _random;
@@ -34,7 +39,6 @@ namespace ChatBridge.Extensions.Vk.Internal
         private UserLongPoll _longPoll;
         private readonly long _peerId;
         private List<User> _chatUsers; 
-        //private
 
         public string ServiceName => "Vk";
 
@@ -47,10 +51,15 @@ namespace ChatBridge.Extensions.Vk.Internal
             _logger = logger;
             _configuration = configuration;
             _api = new VkApi(services);
-            _peerId = 2000000000 + configuration.ChatId.Value;
+            _peerId = Constants.GroupChatIdPrefix + configuration.ChatId.Value;
             _random = random;
         }
 
+        /// <summary>
+        /// Reads message from update
+        /// </summary>
+        /// <param name="update">Update event</param>
+        /// <returns>null if event type is not supported or be parsed; <seealso cref="BridgeMessage"/> to send to other Chats otherwise</returns>
         private async Task<BridgeMessage> ReadMessageFromUpdateAsync(UserUpdate update)
         {
             await Task.CompletedTask;
@@ -71,6 +80,11 @@ namespace ChatBridge.Extensions.Vk.Internal
             return new BridgeMessage(this, senderName, new BridgeMessageContent[] { new CommonTextContent(message.Text) });
         }
 
+        /// <summary>
+        /// Runs listening updates of the client
+        /// </summary>
+        /// <param name="cancelToken"></param>
+        /// <returns></returns>
         private async Task StartListeningUpdates(CancellationToken cancelToken)
         {
             ChannelReader<UserUpdate> channel = _longPoll.AsChannelReader();
@@ -92,6 +106,7 @@ namespace ChatBridge.Extensions.Vk.Internal
             }
         }
 
+        /// <inheritdoc/>
         public async Task InitializeAsync(CancellationToken cancelToken = default)
         {
             _logger.LogInformation("Start initializing Vk Chat");
@@ -101,12 +116,14 @@ namespace ChatBridge.Extensions.Vk.Internal
             });
             _api.VkApiVersion.SetVersion(5, 131);
 
+            //Getting and caching all users of conversation, to not send get request every time we need their info (name, surname)
             GetConversationMembersResult chatMembers = await _api.Messages.GetConversationMembersAsync(_peerId);
             _chatUsers = new List<User>(chatMembers.Profiles);
 
             _logger.LogInformation("Initializing Vk Chat complete successfully");
         }
 
+        /// <inheritdoc/>
         public async Task SendMessageAsync(BridgeMessage message, CancellationToken cancelToken = default)
         {
             var content = (string)await message.FirstOrDefault().GetDataAsync();
@@ -118,6 +135,7 @@ namespace ChatBridge.Extensions.Vk.Internal
             });
         }
 
+        /// <inheritdoc/>
         public async Task<IObservable<BridgeMessage>> StartListenAsync(CancellationToken cancelToken = default)
         {
             _logger.LogInformation("Running Vk Chat...");

@@ -13,12 +13,21 @@ using Telegram.Bot.Types.Enums;
 
 namespace ChatBridge.Extensions.Telegram.Internal
 {
+    /// <summary>
+    /// Listener of Updates for <seealso cref="TelegramChat"/>
+    /// </summary>
     internal class TelegramChatUpdateHandler : IUpdateHandler
     {
         private readonly TelegramChat _chat;
         private readonly Subject<BridgeMessage> _messageSource;
         private readonly IReadOnlyCollection<BridgeMessageContentType> _contentTypes;
 
+        /// <summary>
+        /// Creates new instance of UpdateHandler
+        /// </summary>
+        /// <param name="chat">Chat this handler belongs to</param>
+        /// <param name="subject">Subject that issues messages</param>
+        /// <param name="allowedTypes">Allowed/Supported types to handle</param>
         public TelegramChatUpdateHandler(
             TelegramChat chat,
             Subject<BridgeMessage> subject,
@@ -29,12 +38,14 @@ namespace ChatBridge.Extensions.Telegram.Internal
             _contentTypes = allowedTypes == null ? new List<BridgeMessageContentType>() : new List<BridgeMessageContentType>(allowedTypes);
         }
 
+        /// <inheritdoc/>
         public async Task HandleErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken cancellationToken)
         {
             await Task.CompletedTask;
             _messageSource.OnError(exception);
         }
 
+        /// <inheritdoc/>
         public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
         {
             await Task.CompletedTask;

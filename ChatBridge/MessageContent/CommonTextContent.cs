@@ -13,6 +13,10 @@ namespace ChatBridge.MessageContent
     {
         private readonly string _content;
 
+        /// <summary>
+        /// Instantiates <seealso cref="BridgeMessageContent"/> with plain text as content
+        /// </summary>
+        /// <param name="content">Content of the message</param>
         public CommonTextContent(string content) : base(BridgeMessageContentType.Text)
         {
             _content = content;

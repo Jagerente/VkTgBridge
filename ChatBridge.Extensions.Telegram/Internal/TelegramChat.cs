@@ -1,19 +1,24 @@
-﻿using Microsoft.Extensions.Logging;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reactive.Subjects;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+
+using Microsoft.Extensions.Logging;
+
 using Telegram.Bot;
+using Telegram.Bot.Extensions;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using Telegram.Bot.Extensions;
-using System.Reactive.Subjects;
 
 namespace ChatBridge.Extensions.Telegram.Internal
 {
+    /// <summary>
+    /// Default Telegram implementation of <seealso cref="IBridgeChat"/>
+    /// </summary>
     internal class TelegramChat : IBridgeChat
     {
         private User _botUser;
@@ -33,6 +38,7 @@ namespace ChatBridge.Extensions.Telegram.Internal
             _client = new TelegramBotClient(configuration.Token);
         }
 
+        /// <inheritdoc/>
         public async Task InitializeAsync(CancellationToken cancelToken = default)
         {
             _logger.LogInformation("Start initializing Telegram chat...");
@@ -43,12 +49,14 @@ namespace ChatBridge.Extensions.Telegram.Internal
             _logger.LogInformation($"Telegram chat initialized successfully as {_botUser.Username}:{_botUser.Id}");
         }
 
+        /// <inheritdoc/>
         public async Task SendMessageAsync(BridgeMessage message, CancellationToken cancelToken = default)
         {
             var content = (string) await message.FirstOrDefault().GetDataAsync();
             await _client.SendTextMessageAsync(new ChatId(_configuration.ChatId.Value), content);
         }
 
+        /// <inheritdoc/>
         public async Task<IObservable<BridgeMessage>> StartListenAsync(CancellationToken cancelToken = default)
         {
             await Task.CompletedTask;
@@ -59,6 +67,7 @@ namespace ChatBridge.Extensions.Telegram.Internal
                 ThrowPendingUpdates = true
             };
             var subject = new Subject<BridgeMessage>();
+            //Creating handler
             var updateHandler = new TelegramChatUpdateHandler(this, subject, _configuration.AllowMessageTypes);
 
             _client.StartReceiving(

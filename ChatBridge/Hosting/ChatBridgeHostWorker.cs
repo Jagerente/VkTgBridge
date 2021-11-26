@@ -10,6 +10,9 @@ using Microsoft.Extensions.Logging;
 
 namespace ChatBridge.Hosting
 {
+    /// <summary>
+    /// Worker of Bridge
+    /// </summary>
     internal class ChatBridgeHostWorker : IHostedService
     {
         private ILogger<ChatBridgeHostWorker> _logger;
@@ -32,9 +35,10 @@ namespace ChatBridge.Hosting
             _serviceProvider = serviceProvider;
         }
 
+        /// <inheritdoc/>
         public async Task StartAsync(CancellationToken cancellationToken)
         {
-            //Initialize part
+            //Attempt to initialize all chats
             _logger.LogInformation("Start Initialize clients...");
             try
             {
@@ -43,19 +47,22 @@ namespace ChatBridge.Hosting
             catch(Exception ex)
             {
                 _logger.LogError(ex, "Exception occured while initializing Chats");
+                throw;
             }
             _logger.LogInformation("All clients Initialized successfully");
 
-
+            //Attempt to start all chats
             _logger.LogInformation("Starting listening Chats");
             List<IDisposable> activeSubs = new List<IDisposable>();
             try
             {
+                //Observable sources to listen messages
                 IEnumerable<IObservable<BridgeMessage>> observables = await Task.WhenAll(Chats.Select(x => x.StartListenAsync(cancellationToken)));
 
                 var observer = new BridgeWorkerObserver(Chats, _serviceProvider.GetService<ILogger<BridgeWorkerObserver>>());
                 foreach(var messageObservable in observables)
                 {
+                    //Subscribing observer to all sources of messages
                     IDisposable sub = messageObservable.Subscribe(observer);
                     activeSubs.Add(sub);
                 }
@@ -63,6 +70,7 @@ namespace ChatBridge.Hosting
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Exception occured while initializing Chats");
+                throw;
             }
 
             _logger.LogInformation("All clients Initialized successfully");
@@ -82,17 +90,26 @@ namespace ChatBridge.Hosting
             }
         }
 
+        /// <inheritdoc/>
         public async Task StopAsync(CancellationToken cancellationToken)
         {
             await Task.CompletedTask;
             cancellationToken.ThrowIfCancellationRequested();
         }
 
+        /// <summary>
+        /// Special observer to track new <seealso cref="BridgeMessage"/>
+        /// </summary>
         private class BridgeWorkerObserver : IObserver<BridgeMessage>
         {
             private IReadOnlyCollection<IBridgeChat> _chats;
             private ILogger<BridgeWorkerObserver> _logger;
 
+            /// <summary>
+            /// Creates new instance of observer
+            /// </summary>
+            /// <param name="chats">Active Chats</param>
+            /// <param name="logger">Logger</param>
             public BridgeWorkerObserver(
                 IReadOnlyCollection<IBridgeChat> chats,
                 ILogger<BridgeWorkerObserver> logger)
@@ -114,6 +131,7 @@ namespace ChatBridge.Hosting
             {
                 //TODO: Maybe add lock?
                 IEnumerable<IBridgeChat> chatsToSend = _chats.Where(x => x != value.SourceChat);
+                //Makes all chats (exclusive source chat) send content
                 Task.WhenAll(chatsToSend.Select(x => x.SendMessageAsync(value))).Wait();
             }
         }

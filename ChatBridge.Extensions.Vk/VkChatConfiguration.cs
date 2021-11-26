@@ -27,6 +27,7 @@ namespace ChatBridge.Extensions.Vk
         [JsonPropertyName("token")]
         public string Token { get; set; }
 
+        //TODO: Test if works
         /// <summary>
         /// Types of <seealso cref="BridgeMessageContent"/> to ignore
         /// </summary>

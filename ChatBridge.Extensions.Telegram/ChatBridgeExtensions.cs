@@ -1,14 +1,15 @@
-﻿using ChatBridge.Extensions.Telegram.Internal;
+﻿using System;
+
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+
+using ChatBridge.Extensions.Telegram.Internal;
 
 namespace ChatBridge.Extensions.Telegram
 {
+    /// <summary>
+    /// Set of extensions to add/configure Telegram Chat
+    /// </summary>
     public static class ChatBridgeExtensions
     {
         private static void EnsureConfigIsFull(TelegramChatConfiguration config)

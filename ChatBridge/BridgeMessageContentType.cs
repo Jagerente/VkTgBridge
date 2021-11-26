@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 
 namespace ChatBridge
 {
+    //TODO:?
     public enum BridgeMessageContentType
     {
         Unknown,
@@ -21,5 +22,8 @@ namespace ChatBridge
         Poll,
         Reply,
         Forwarded
+        //Maybe separate resources by url and by data/bytes?
+        //PhotoLink,
+        //VideoLink,
     }
 }
