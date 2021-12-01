@@ -106,6 +106,7 @@ namespace ChatBridge.Extensions.Telegram.Internal
                         }
                     }
 
+
                     break;
                 }
                 case MessageType.Photo:
