@@ -74,9 +74,8 @@ namespace ChatBridge.Extensions.Telegram.Internal
                     var fileId = update.Message.Sticker.FileId;
                     var fileInfo = await botClient.GetFileAsync(fileId);
 
-                    if (!Directory.Exists("temp")) Directory.CreateDirectory("temp");
+                    //if (!Directory.Exists("temp")) Directory.CreateDirectory("temp");
                     var filePath = $"temp/{fileInfo.FilePath.Split("/").Last()}";
-
                     
                     using (var fileStream = new MemoryStream())
                     {
@@ -100,7 +99,7 @@ namespace ChatBridge.Extensions.Telegram.Internal
                                     .Save(outStream);
                             }
 
-                            var apiClient = new ApiClient("e85b52d0b7d494f");
+                            var apiClient = new ApiClient("");
                             var httpClient = new HttpClient();
                             var imageEndpoint = new ImageEndpoint(apiClient, httpClient);
                             var imageUpload = await imageEndpoint.UploadImageAsync(outStream);
