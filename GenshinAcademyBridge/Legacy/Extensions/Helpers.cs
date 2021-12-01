@@ -3,6 +3,8 @@ using Newtonsoft.Json.Linq;
 using System;
 using System.IO;
 using System.Linq;
+using ChatBridge;
+using ChatBridge.MessageContent;
 
 namespace GenshinAcademyBridge.Extensions
 {
@@ -60,6 +62,15 @@ namespace GenshinAcademyBridge.Extensions
 
     public static class VkExtensions
     {
+        public static PhotoContent AsPhotoContent(this BridgeMessageContent content)
+        {
+            if (content.Type == BridgeMessageContentType.Photo && content is PhotoContent resultContent)
+            {
+                return resultContent;
+            }
+            throw new InvalidOperationException();
+        }
+
         public static BridgeMessageType GetMessageType(this VkNet.Model.Message msg)
         {
             if (msg.Attachments.Count > 0)

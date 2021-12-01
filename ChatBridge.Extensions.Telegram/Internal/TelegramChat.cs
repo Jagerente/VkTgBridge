@@ -5,7 +5,7 @@ using System.Reactive.Subjects;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
-
+using ChatBridge.MessageContent;
 using Microsoft.Extensions.Logging;
 
 using Telegram.Bot;
@@ -52,9 +52,97 @@ namespace ChatBridge.Extensions.Telegram.Internal
         /// <inheritdoc/>
         public async Task SendMessageAsync(BridgeMessage message, CancellationToken cancelToken = default)
         {
-            var content = (string) await message.FirstOrDefault().GetDataAsync();
-            await _client.SendTextMessageAsync(new ChatId(_configuration.ChatId.Value), content);
+            //var content = (string) await message.FirstOrDefault().GetDataAsync();
+            foreach (var content in message.Content)
+            {
+                switch (content.Type)
+                {
+                    case BridgeMessageContentType.Unknown:
+                        break;
+                    case BridgeMessageContentType.Text:
+                        await SendMessageAsync(_configuration.ChatId.Value, content.AsTextContent().Text);
+                        break;
+                    case BridgeMessageContentType.Photo:
+                        await SendPhotoAsync(_configuration.ChatId.Value, content.AsPhotoContent().Caption, content.AsPhotoContent().Url);
+                        break;
+                    case BridgeMessageContentType.Audio:
+                        break;
+                    case BridgeMessageContentType.Video:
+                        await SendVideoAsync(_configuration.ChatId.Value, content.AsVideoContent().Caption, content.AsVideoContent().Thumbnail);
+                        break;
+                    case BridgeMessageContentType.Voice:
+                        break;
+                    case BridgeMessageContentType.Document:
+                        break;
+                    case BridgeMessageContentType.Sticker:
+                        await SendStickerAsync(_configuration.ChatId.Value, string.Empty, content.AsStickerContent().Url);
+                        break;
+                    case BridgeMessageContentType.ChatMembersAdded:
+                        break;
+                    case BridgeMessageContentType.ChatMemberLeft:
+                        break;
+                    case BridgeMessageContentType.Poll:
+                        await SendPollAsync(_configuration.ChatId.Value, content.AsPollContent().Question, content.AsPollContent().Options, content.AsPollContent().IsAnonymous, content.AsPollContent().IsMultiple);
+                        break;
+                    case BridgeMessageContentType.Reply:
+                        break;
+                    case BridgeMessageContentType.Forwarded:
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
         }
+
+        public async Task<long> SendMessageAsync(long conversationId, string message)
+        {
+            return Convert.ToInt64((await _client.SendTextMessageAsync(chatId: conversationId, text: message)).MessageId);
+        }
+
+        public async Task<long> ReplyAsync(long conversationId, string message, long id)
+        {
+            return Convert.ToInt64((await _client.SendTextMessageAsync(chatId: conversationId, text: message, replyToMessageId: Convert.ToInt32(id))).MessageId);
+        }
+
+        public async Task SendStickerAsync(long conversationId, string message, string url)
+        {
+            await SendPhotoAsync(conversationId, message, url);
+        }
+
+        public async Task SendPhotoAsync(long conversationId, string message, string url)
+        {
+            await _client.SendPhotoAsync(chatId: conversationId, photo: url, caption: message);
+        }
+
+        public async Task SendPhotoAsync(long conversationId, string message, string[] url)
+        {
+            if (url.Length == 1)
+            {
+                await SendPhotoAsync(conversationId, message, url.FirstOrDefault());
+            }
+            else
+            {
+                var photos = new IAlbumInputMedia[] { };
+                foreach (var photo in url)
+                {
+                    photos = photos.Append(new InputMediaPhoto(photo)).ToArray();
+                }
+                await _client.SendMediaGroupAsync(chatId: conversationId, media: photos);
+                await SendMessageAsync(conversationId, message);
+            }
+        }
+
+        public async Task SendVideoAsync(long conversationId, string message, string url)
+        { 
+            await _client.SendPhotoAsync(chatId: conversationId, photo: url, caption: message);
+        }
+
+        public async Task SendPollAsync(long conversationId, string question, string[] options, bool? isAnonymous, bool? allowsMultipleAnswers)
+        {
+            await _client.SendPollAsync(conversationId, $"{question}", options, isAnonymous, allowsMultipleAnswers: allowsMultipleAnswers);
+
+        }
+
 
         /// <inheritdoc/>
         public async Task<IObservable<BridgeMessage>> StartListenAsync(CancellationToken cancelToken = default)

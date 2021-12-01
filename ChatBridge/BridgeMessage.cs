@@ -10,7 +10,7 @@ namespace ChatBridge
     public class BridgeMessage : IEnumerable<BridgeMessageContent>
     {
         /// <summary>
-        /// Content of Message
+        /// Text of Message
         /// </summary>
         public IEnumerable<BridgeMessageContent> Content { get; }
 

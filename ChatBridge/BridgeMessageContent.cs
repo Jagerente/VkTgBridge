@@ -12,7 +12,7 @@ namespace ChatBridge
     public abstract class BridgeMessageContent
     {
         /// <summary>
-        /// Type of Content
+        /// Type of Text
         /// </summary>
         public BridgeMessageContentType Type { get; }
 
@@ -22,7 +22,7 @@ namespace ChatBridge
         }
 
         /// <summary>
-        /// Gets data of the Content
+        /// Gets data of the Text
         /// </summary>
         /// <returns></returns>
         public abstract Task<object> GetDataAsync();
