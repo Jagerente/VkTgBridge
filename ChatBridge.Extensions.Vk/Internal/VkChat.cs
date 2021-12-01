@@ -192,6 +192,8 @@ namespace ChatBridge.Extensions.Vk.Internal
                 Message = content,
                 RandomId = _random.Next(int.MaxValue)
             });
+
+
         }
 
         /// <inheritdoc/>
