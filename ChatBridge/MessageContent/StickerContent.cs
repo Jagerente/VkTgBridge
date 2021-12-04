@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 namespace ChatBridge.MessageContent
 {
@@ -12,15 +8,24 @@ namespace ChatBridge.MessageContent
     public class StickerContent : BridgeMessageContent
     {
         public readonly string Url;
+        public readonly string Sender;
+        public readonly byte[] File;
 
         /// <summary>
         /// Instantiates <seealso cref="BridgeMessageContent"/> with plain text as url
         /// </summary>
         /// <param name="url">Sticker URL</param>
-        /// <param name="title">Video title</param>
-        public StickerContent(string url) : base(BridgeMessageContentType.Sticker)
+        /// <param name="sender">Sender name</param>
+        public StickerContent(string url, string sender) : base(BridgeMessageContentType.Sticker)
         {
             Url = url;
+            Sender = sender;
+        }
+
+        public StickerContent(byte[] file, string sender) : base(BridgeMessageContentType.Sticker)
+        {
+            File = file;
+            Sender = sender;
         }
 
         public override async Task<object> GetDataAsync()

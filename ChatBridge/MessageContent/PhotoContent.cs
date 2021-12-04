@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Threading.Tasks;
 
 namespace ChatBridge.MessageContent
 {
@@ -13,16 +9,19 @@ namespace ChatBridge.MessageContent
     {
         public readonly string Url;
         public readonly string Caption;
+        public readonly string Sender;
 
         /// <summary>
         /// Instantiates <seealso cref="BridgeMessageContent"/> with plain caption as url
         /// </summary>
         /// <param name="url">Photo URL</param>
         /// <param name="caption">Appended caption</param>
-        public PhotoContent(string url, string caption) : base(BridgeMessageContentType.Photo)
+        /// <param name="sender">Sender name</param>
+        public PhotoContent(string url, string caption, string sender) : base(BridgeMessageContentType.Photo)
         {
             Url = url;
             Caption = caption;
+            Sender = sender;
         }
 
         public override async Task<object> GetDataAsync()
