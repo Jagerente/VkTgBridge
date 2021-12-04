@@ -1,11 +1,9 @@
 ﻿using System;
-using GenshinAcademyBridge.Extensions;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using Serilog;
 using Telegram.Bot;
-using Telegram.Bot.Args;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
 using GenshinAcademyBridge.Configuration;

@@ -1,20 +1,12 @@
 ﻿using GenshinAcademyBridge.Extensions;
 using System;
-using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using GroupDocs.Conversion;
-using GroupDocs.Conversion.FileTypes;
-using GroupDocs.Conversion.Options.Convert;
 using ImageProcessor;
 using ImageProcessor.Imaging.Formats;
-using RestSharp;
-using RestSharp.Authenticators;
-using Serilog;
-using Serilog.Core;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
 using Telegram.Bot.Types;
@@ -78,17 +70,17 @@ namespace GenshinAcademyBridge.Modules
 
                     //if (message.ForwardFrom != null)
                     //{
-                    //    msg = Helpers.GetMessageTop(VkMessageType.Forwarded, sender, message.Caption, message.ForwardFrom.Username.FirstCharToUpper());
+                    //    msg = Helpers.FormMessage(VkMessageType.Forwarded, sender, message.Caption, message.ForwardFrom.Username.FirstCharToUpper());
                     //}
                     //if (message.ForwardFromChat != null)
                     //{
                     //    Log.Logger.Information("Joined.");
-                    //    msg = Helpers.GetMessageTop(VkMessageType.Forwarded, sender, message.Caption, message.ForwardFromChat.Username.FirstCharToUpper());
+                    //    msg = Helpers.FormMessage(VkMessageType.Forwarded, sender, message.Caption, message.ForwardFromChat.Username.FirstCharToUpper());
                     //}
                     //if (message.ReplyToMessage != null)
                     //{
                     //    Log.Logger.Information(message.ReplyToMessage.From.Username);
-                    //    msg = Helpers.GetMessageTop(VkMessageType.Caption, sender, message.Caption, message.ReplyToMessage.From.Username).FirstCharToUpper();
+                    //    msg = Helpers.FormMessage(VkMessageType.Caption, sender, message.Caption, message.ReplyToMessage.From.Username).FirstCharToUpper();
                     //    foreach (var bridge in Program.Bridges)
                     //    {
                     //        Program.MessagesIds.Add(message.MessageId, await VkBot.ReplyAsync(bridge.VkId, msg, Program.MessagesIds[message.ReplyToMessage.MessageId]));

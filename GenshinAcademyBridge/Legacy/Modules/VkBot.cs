@@ -8,7 +8,6 @@ using System.Linq;
 using System.Net;
 using System.Reactive.Subjects;
 using System.Text;
-using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using VkNet;
@@ -205,7 +204,7 @@ namespace GenshinAcademyBridge.Modules
                         //    foreach (var bridge in Program.Bridges)
                         //    {
                         //        Console.WriteLine((long)userUpdate.Message.ReplyMessage.ConversationMessageId);
-                        //        Program.MessagesIds.Add((long)userUpdate.Message.ConversationMessageId, TgBot.ReplyAsync(bridge.TgId, Helpers.GetMessageTop(VkMessageType.Caption, sender, message), Program.MessagesIds[(long)userUpdate.Message.ReplyMessage.ConversationMessageId]).Result);
+                        //        Program.MessagesIds.Add((long)userUpdate.Message.ConversationMessageId, TgBot.ReplyAsync(bridge.TgId, Helpers.FormMessage(VkMessageType.Caption, sender, message), Program.MessagesIds[(long)userUpdate.Message.ReplyMessage.ConversationMessageId]).Result);
                         //    }
                         //    break;
                         //}
