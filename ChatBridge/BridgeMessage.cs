@@ -10,6 +10,11 @@ namespace ChatBridge
     public class BridgeMessage : IEnumerable<BridgeMessageContent>
     {
         /// <summary>
+        /// Id for message used in Bridge infrastructure
+        /// </summary>
+        public Guid BridgeId { get; } = Guid.NewGuid();
+
+        /// <summary>
         /// Text of Message
         /// </summary>
         public IEnumerable<BridgeMessageContent> Content { get; }
