@@ -6,7 +6,6 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Reactive.Subjects;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using ImageProcessor;
@@ -17,7 +16,6 @@ using Telegram.Bot;
 using Telegram.Bot.Extensions.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
-using File = System.IO.File;
 
 namespace ChatBridge.Extensions.Telegram.Internal
 {
@@ -57,7 +55,7 @@ namespace ChatBridge.Extensions.Telegram.Internal
         public async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken cancellationToken)
         {
             await Task.CompletedTask;
-            string senderName = update.Message.From.Username ?? $"{update.Message.From.FirstName} {update.Message.From.LastName}";
+            string senderName = update.Message.From.Username.FirstCharToUpper() ?? $"{update.Message.From.FirstName.FirstCharToUpper()} {update.Message.From.LastName.FirstCharToUpper()}".Trim();
             BridgeMessage receivedMessage = null;
 
             switch (update.Message.Type)
@@ -66,7 +64,7 @@ namespace ChatBridge.Extensions.Telegram.Internal
                 {
                     receivedMessage = new BridgeMessage(_chat, senderName, new BridgeMessageContent[]
                     {
-                        new TextContent(update.Message.Text)
+                        new TextContent(update.Message.Text, senderName)
                     });
                     break;
                 }
@@ -97,38 +95,37 @@ namespace ChatBridge.Extensions.Telegram.Internal
                             var httpClient = new HttpClient();
                             var imageEndpoint = new ImageEndpoint(apiClient, httpClient);
                             var imageUpload = await imageEndpoint.UploadImageAsync(outStream);
-                            var url = imageUpload.Link;
+                            var stickerUrl = imageUpload.Link;
                             receivedMessage = new BridgeMessage(_chat, senderName, new BridgeMessageContent[]
                             {
-                                new StickerContent(url)
+                                new StickerContent(stickerUrl, senderName)
                             });
 
                         }
                     }
 
-
                     break;
                 }
                 case MessageType.Photo:
                 {
-                    var fileId = update.Message.Photo.LastOrDefault().FileId;
-                    var fileInfo = await botClient.GetFileAsync(fileId);
-                    if (!Directory.Exists("temp")) Directory.CreateDirectory("temp");
-                    var filePath = $"temp/{fileId}.{fileInfo.FilePath.Split(".").Last()}";
-                    await using (var fileStream = System.IO.File.Create(filePath, 4096, FileOptions.DeleteOnClose))
+                    await using (var fileStream = new MemoryStream())
                     {
+                        var caption = update.Message.Caption;
+
+                        var fileId = update.Message.Photo.LastOrDefault().FileId;
+
                         await botClient.GetInfoAndDownloadFileAsync(fileId, fileStream);
 
-                        var apiClient = new ApiClient("");
+                        fileStream.Position = 0L;
+
+                        var apiClient = new ApiClient("e85b52d0b7d494f");
                         var httpClient = new HttpClient();
                         var imageEndpoint = new ImageEndpoint(apiClient, httpClient);
                         var imageUpload = await imageEndpoint.UploadImageAsync(fileStream);
-
-                        var url = imageUpload.Link;
-
+                        var photoUrl = imageUpload.Link;
                         receivedMessage = new BridgeMessage(_chat, senderName, new BridgeMessageContent[]
                         {
-                            new PhotoContent(url, update.Message.Caption)
+                            new PhotoContent(photoUrl, caption, senderName)
                         });
                     }
 
@@ -136,28 +133,38 @@ namespace ChatBridge.Extensions.Telegram.Internal
                 }
                 case MessageType.Video:
                 {
-                    var title = update.Message.Video.FileName;
-                    var fileId = update.Message.Video.Thumb.FileId;
-                    var fileInfo = await botClient.GetFileAsync(fileId);
-                    if (!Directory.Exists("temp")) Directory.CreateDirectory("temp");
-                    var filePath = $"temp/{fileId}.{fileInfo.FilePath.Split(".").Last()}";
-                    await using (var fileStream = System.IO.File.Create(filePath, 4096, FileOptions.DeleteOnClose))
+                    await using (var fileStream = new MemoryStream())
                     {
+                        var fileName = update.Message.Video.FileName;
+                        var caption = update.Message.Caption;
+                        var fileId = update.Message.Video.Thumb.FileId;
+
                         await botClient.GetInfoAndDownloadFileAsync(fileId, fileStream);
 
-                        var apiClient = new ApiClient("");
-                        var httpClient = new HttpClient();
-                        var imageEndpoint = new ImageEndpoint(apiClient, httpClient);
-                        var imageUpload = await imageEndpoint.UploadImageAsync(fileStream);
-
-                        var url = imageUpload.Link;
-
-                        receivedMessage = new BridgeMessage(_chat, senderName, new BridgeMessageContent[]
+                        fileStream.Position = 0L;
+                        ISupportedImageFormat format = new JpegFormat();
+                        await using (MemoryStream outStream = new MemoryStream())
                         {
-                            new VideoContent(url, title, update.Message.Caption)
-                        });
-                    }
+                            // Initialize the ImageFactory using the overload to preserve EXIF metadata.
+                            using (ImageFactory imageFactory = new ImageFactory(preserveExifData: true))
+                            {
+                                // Load, resize, set the format and quality and save an image.
+                                imageFactory.Load(fileStream)
+                                    .Format(format)
+                                    .Save(outStream);
+                            }
 
+                            var apiClient = new ApiClient("e85b52d0b7d494f");
+                            var httpClient = new HttpClient();
+                            var imageEndpoint = new ImageEndpoint(apiClient, httpClient);
+                            var imageUpload = await imageEndpoint.UploadImageAsync(outStream);
+                            var thumbnailUrl = imageUpload.Link;
+                            receivedMessage = new BridgeMessage(_chat, senderName, new BridgeMessageContent[]
+                            {
+                                new VideoContent(thumbnailUrl, fileName, caption, senderName)
+                            });
+                        }
+                    }
                     break;
                 }
             }

@@ -1,21 +1,32 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.IO;
 using System.Linq;
+using System.Net;
+using System.Net.Http;
+using System.Net.Http.Headers;
 using System.Reactive.Subjects;
+using System.Text;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
 using ChatBridge.MessageContent;
+using ImageProcessor;
+using ImageProcessor.Imaging.Formats;
+using ImageProcessor.Plugins.WebP.Imaging.Formats;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using VkNet;
 using VkNet.Enums;
+using VkNet.Enums.SafetyEnums;
 using VkNet.Extensions.Polling;
 using VkNet.Extensions.Polling.Models.Configuration;
 using VkNet.Extensions.Polling.Models.Update;
 using VkNet.Model;
 using VkNet.Model.Attachments;
 using VkNet.Model.RequestParams;
+using VkNet.Model.RequestParams.Polls;
 
 namespace ChatBridge.Extensions.Vk.Internal
 {
@@ -49,7 +60,7 @@ namespace ChatBridge.Extensions.Vk.Internal
         }
 
         /// <summary>
-        /// Reads message from update
+        /// Reads text from update
         /// </summary>
         /// <param name="update">Update event</param>
         /// <returns>null if event type is not supported or be parsed; <seealso cref="BridgeMessage"/> to send to other Chats otherwise</returns>
@@ -69,37 +80,50 @@ namespace ChatBridge.Extensions.Vk.Internal
             }
             long fromId = message.FromId.GetValueOrDefault();
             User sender = _chatUsers.FirstOrDefault(x => x.Id == fromId);
+            string senderName = sender == null ? "Unknown" : $"{sender.FirstName.FirstCharToUpper()} {sender.LastName.FirstCharToUpper()}".Trim();
 
             List<BridgeMessageContent> contents = new List<BridgeMessageContent>();
 
             foreach (var attachment in message.Attachments)
             {
                 var tag = attachment.Instance.ToString();
-                Console.WriteLine(tag);
                 var type = BridgeMessageContentType.Text;
-                Console.WriteLine(tag);
                 if (tag.Contains("sticker"))
                 {
-                    Console.WriteLine("vk:sticker");
+                    _logger.LogInformation("vk:sticker");
 
-                    var sticker = ((Sticker)attachment.Instance).Images.First().Url.ToString();
-                    Console.WriteLine(((Sticker)attachment.Instance).Images.Count());
-                    contents.Add(new StickerContent(sticker));
+                    var sticker = ((Sticker) attachment.Instance).Images.LastOrDefault().Url.ToString();
+                    await using (var fileStream = new MemoryStream(new WebClient().DownloadData(sticker)))
+                    {
+                        fileStream.Position = 0L;
+                        ISupportedImageFormat format = new WebPFormat();
+                        await using (MemoryStream outStream = new MemoryStream())
+                        {
+                            // Initialize the ImageFactory using the overload to preserve EXIF metadata.
+                            using (ImageFactory imageFactory = new ImageFactory(preserveExifData: true))
+                            {
+                                Size size = new Size(150, 150);
+                                // Load, resize, set the format and quality and save an image.
+                                imageFactory.Load(fileStream)
+                                    .Resize(size)
+                                    .Format(format)
+                                    .Save(outStream);
+                            }
+                            contents.Add(new StickerContent(outStream.ToArray(), senderName));
+                        }
+                    }
                 }
                 else if (tag.Contains("photo"))
                 {
-                    Console.WriteLine("vk:photo");
-
-                    contents.Add(new PhotoContent(((Photo)attachment.Instance).Sizes.Last().Url.AbsoluteUri, message.Attachments.Count > 1 ? string.Empty : message.Text));
+                    var photoUrl = ((Photo) attachment.Instance).Sizes.Last().Url.AbsoluteUri;
+                    contents.Add(new PhotoContent(photoUrl, message.Attachments.Count > 1 ? string.Empty : message.Text, senderName));
                 }
                 else if (tag.Contains("video"))
                 {
-                    Console.WriteLine("vk:video");
-
                     var video = (Video)attachment.Instance;
                     var title = video.Title;
                     var url = $"{video.Image.Last().Url.AbsoluteUri}";
-                    contents.Add(new VideoContent(url, title, message.Attachments.Count > 1 ? string.Empty : message.Text));
+                    contents.Add(new VideoContent(url, title, message.Attachments.Count > 1 ? string.Empty : message.Text, senderName));
                 }
 
                 else if (tag.Contains("audio_message"))
@@ -116,25 +140,20 @@ namespace ChatBridge.Extensions.Vk.Internal
                 }
                 else if (tag.Contains("poll"))
                 {
-                    Console.WriteLine("vk:poll");
-
                     var poll = (Poll)attachment.Instance;
                     var question = poll.Question;
                     var options = poll.Answers.Select(x => x.Text).ToArray();
                     var isAnonymous = poll.Anonymous;
                     var isMultiple = poll.Multiple;
 
-                    contents.Add(new PollContent(question, options, isAnonymous, isMultiple));
+                    contents.Add(new PollContent(question, options, isAnonymous, isMultiple, message.Text, senderName));
                 }
             }
 
             if (message.Attachments.Count != 1)
             {
-                Console.WriteLine("vk:text");
-                contents.Add(new TextContent(message.Text));
+                contents.Add(new TextContent(message.Text, senderName));
             }
-
-            string senderName = sender == null ? "Unknown" : $"{sender.FirstName} {sender.LastName}";
 
             return new BridgeMessage(this, senderName, contents);
         }
@@ -185,15 +204,117 @@ namespace ChatBridge.Extensions.Vk.Internal
         /// <inheritdoc/>
         public async Task SendMessageAsync(BridgeMessage message, CancellationToken cancelToken = default)
         {
-            var content = (string)await message.FirstOrDefault().GetDataAsync();
-            await _api.Messages.SendAsync(new MessagesSendParams
+            foreach (var content in message.Content)
             {
-                PeerId = _peerId,
-                Message = content,
-                RandomId = _random.Next(int.MaxValue)
-            });
+                switch (content.Type)
+                {
+                    //case BridgeMessageContentType.Unknown:
+                    //    break;
+                    case BridgeMessageContentType.Text:
+                        await SendTextAsync(_peerId, content.AsTextContent());
+                        break;
+                    case BridgeMessageContentType.Photo:
+                        await SendPhotoAsync(_peerId, content.AsPhotoContent());
+                        break;
+                    //case BridgeMessageContentType.Audio:
+                    //    break;
+                    case BridgeMessageContentType.Video:
+                        await SendVideoAsync(_peerId, content.AsVideoContent());
+                        break;
+                    //case BridgeMessageContentType.Voice:
+                    //    break;
+                    //case BridgeMessageContentType.Document:
+                    //    break;
+                    case BridgeMessageContentType.Sticker:
+                        await SendStickerAsync(_peerId, content.AsStickerContent());
+                        break;
+                    //case BridgeMessageContentType.ChatMembersAdded:
+                    //    break;
+                    //case BridgeMessageContentType.ChatMemberLeft:
+                    //    break;
+                    case BridgeMessageContentType.Poll:
+                        await SendPollAsync(_peerId, content.AsPollContent());
+                        break;
+                    //case BridgeMessageContentType.Reply:
+                    //    break;
+                    //case BridgeMessageContentType.Forwarded:
+                    //    break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
+                }
+            }
+        }
+
+        public async Task<long> SendTextAsync(long conversationId, TextContent content)
+        {
+            var msgId = await _api.Messages.SendAsync(new MessagesSendParams
+            { PeerId = conversationId, RandomId = new Random().Next(int.MaxValue), Message = content.FormMessage() });
+            return msgId;
+        }
+
+        internal async Task<long> SendPhotoAsync(long conversationId, PhotoContent content)
+        {
+            _logger.LogInformation($"Sent {content.Type} | {content.AsPhotoContent().Url}");
+            var uploadServer = await _api.Photo.GetMessagesUploadServerAsync(0);
+            var response = UploadFileAsync(uploadServer.UploadUrl, content.AsPhotoContent().Url).Result;
+            var attachment = await _api.Photo.SaveMessagesPhotoAsync(response);
+            return _api.Messages.Send(new MessagesSendParams { PeerId = conversationId, RandomId = new Random().Next(int.MaxValue), Message = content.FormMessage(), Attachments = attachment });
+        }
+
+        internal async Task<long> SendVideoAsync(long conversationId, VideoContent content)
+        {
+            _logger.LogInformation($"Sent {content.Type}");
+            var uploadServer = await _api.Photo.GetMessagesUploadServerAsync(0);
+            var response = UploadFileAsync(uploadServer.UploadUrl, content.AsVideoContent().Thumbnail).Result;
+            var attachment = await _api.Photo.SaveMessagesPhotoAsync(response);
+            return _api.Messages.Send(new MessagesSendParams { PeerId = conversationId, RandomId = new Random().Next(int.MaxValue), Message = content.FormMessage(), Attachments = attachment });
+        }
+
+        internal async Task<long> SendStickerAsync(long conversationId, StickerContent content)
+        {
+            _logger.LogInformation($"Sent {content.Type}");
+            var uploadServer = await _api.Docs.GetMessagesUploadServerAsync(0, DocMessageType.Graffiti);
+            var response = UploadFileAsync(uploadServer.UploadUrl, content.Url).Result;
+            var attachment = new List<MediaAttachment> { _api.Docs.SaveAsync(response, new Random().Next(int.MaxValue).ToString(), null).Result.FirstOrDefault().Instance };
+            return _api.Messages.Send(new MessagesSendParams { PeerId = conversationId, RandomId = new Random().Next(int.MaxValue), Message = content.AsStickerContent().FormMessage(), Attachments = attachment });
+        }
+
+        internal async Task<long> SendPollAsync(long conversationId, PollContent content)
+        {
+            _logger.LogInformation($"Sent {content.Type}");
+            var pollConent = content.AsPollContent();
+            var poll = await _api.PollsCategory.CreateAsync(new PollsCreateParams { Question = pollConent.Question, AddAnswers = pollConent.Options, IsAnonymous = pollConent.IsAnonymous, IsMultiple = pollConent.IsMultiple });
+            return _api.Messages.Send(new MessagesSendParams { PeerId = conversationId, RandomId = new Random().Next(int.MaxValue), Message = pollConent.Caption, Attachments = new[] { poll } });
+        }
+
+        internal async Task<long> ReplyAsync(long conversationId, string message, long id)
+        {
+            var msgId = await _api.Messages.SendAsync(new MessagesSendParams
+            { PeerId = conversationId, RandomId = new Random().Next(int.MaxValue), Message = message, ReplyTo = id });
+            return msgId;
+        }
 
 
+        private static async Task<string> UploadFileAsync(string serverUrl, string fileUrl)
+        {
+            using (var client = new HttpClient())
+            {
+                var requestContent = new MultipartFormDataContent();
+                var content = new ByteArrayContent(GetBytes(fileUrl));
+                content.Headers.ContentType = MediaTypeHeaderValue.Parse("multipart/form-data");
+                requestContent.Add(content, "file", $"file.{fileUrl.Split(".").Last()}");
+
+                var response = client.PostAsync(serverUrl, requestContent).Result;
+                return Encoding.Default.GetString(await response.Content.ReadAsByteArrayAsync());
+            }
+        }
+
+        private static byte[] GetBytes(string fileUrl)
+        {
+            using (var webClient = new WebClient())
+            {
+                return webClient.DownloadData(fileUrl);
+            }
         }
 
         /// <inheritdoc/>
