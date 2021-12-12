@@ -11,6 +11,7 @@ using ChatBridge.Extensions.Telegram;
 using ChatBridge.Hosting;
 using GenshinAcademyBridge.Configuration;
 using Serilog;
+using ChatBridge.Caching.Memory;
 
 namespace GenshinAcademyBridge
 {
@@ -32,6 +33,12 @@ namespace GenshinAcademyBridge
             services.AddVkChatBridge(configuration);
             //Adding Telegram Chat to bridge
             services.AddTelegramChatBridge(configuration);
+
+            //Adding memory cache
+            services.AddMemoryCache(config =>
+            {
+                config.Limit = 500;
+            });
         }
 
         public static async Task Main(string[] args)
