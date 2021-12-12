@@ -81,13 +81,46 @@ namespace ChatBridge.Extensions.Vk.Internal
             long fromId = message.FromId.GetValueOrDefault();
             User sender = _chatUsers.FirstOrDefault(x => x.Id == fromId);
             string senderName = sender == null ? "Unknown" : $"{sender.FirstName.FirstCharToUpper()} {sender.LastName.FirstCharToUpper()}".Trim();
+            List<BridgeMessageContent> contents = new List<BridgeMessageContent>(); ;
 
-            List<BridgeMessageContent> contents = new List<BridgeMessageContent>();
+            //Для Reply
+            if (message.ReplyMessage != null)
+            {
+                //Получение ID для Reply
+                //message.ReplyMessage.Id;
+            }
+
+            //Для forward
+            if (message.ForwardedMessages != null)
+            {
+                var fwdContents = new List<BridgeMessageContent>();
+
+                foreach (var fwdMsg in message.ForwardedMessages)
+                {
+                    await GetContents(fwdContents, fwdMsg);
+                }
+
+                contents.Add(new ForwardContent(fwdContents, senderName));
+            }
+
+            await GetContents(contents, message);
+
+            return new BridgeMessage(this, senderName, contents);
+        }
+
+        private async Task<List<BridgeMessageContent>> GetContents(List<BridgeMessageContent> contents, Message message)
+        {
+            long fromId = message.FromId.GetValueOrDefault();
+            User sender = _chatUsers.FirstOrDefault(x => x.Id == fromId);
+            string senderName = sender == null
+                ? "Unknown"
+                : $"{sender.FirstName.FirstCharToUpper()} {sender.LastName.FirstCharToUpper()}".Trim();
 
             foreach (var attachment in message.Attachments)
             {
                 var tag = attachment.Instance.ToString();
                 var type = BridgeMessageContentType.Text;
+
                 if (tag.Contains("sticker"))
                 {
                     _logger.LogInformation("vk:sticker");
@@ -109,6 +142,7 @@ namespace ChatBridge.Extensions.Vk.Internal
                                     .Format(format)
                                     .Save(outStream);
                             }
+
                             contents.Add(new StickerContent(outStream.ToArray(), senderName));
                         }
                     }
@@ -116,14 +150,16 @@ namespace ChatBridge.Extensions.Vk.Internal
                 else if (tag.Contains("photo"))
                 {
                     var photoUrl = ((Photo) attachment.Instance).Sizes.Last().Url.AbsoluteUri;
-                    contents.Add(new PhotoContent(photoUrl, message.Attachments.Count > 1 ? string.Empty : message.Text, senderName));
+                    contents.Add(new PhotoContent(photoUrl, message.Attachments.Count > 1 ? string.Empty : message.Text,
+                        senderName));
                 }
                 else if (tag.Contains("video"))
                 {
-                    var video = (Video)attachment.Instance;
+                    var video = (Video) attachment.Instance;
                     var title = video.Title;
                     var url = $"{video.Image.Last().Url.AbsoluteUri}";
-                    contents.Add(new VideoContent(url, title, message.Attachments.Count > 1 ? string.Empty : message.Text, senderName));
+                    contents.Add(new VideoContent(url, title,
+                        message.Attachments.Count > 1 ? string.Empty : message.Text, senderName));
                 }
 
                 else if (tag.Contains("audio_message"))
@@ -140,7 +176,7 @@ namespace ChatBridge.Extensions.Vk.Internal
                 }
                 else if (tag.Contains("poll"))
                 {
-                    var poll = (Poll)attachment.Instance;
+                    var poll = (Poll) attachment.Instance;
                     var question = poll.Question;
                     var options = poll.Answers.Select(x => x.Text).ToArray();
                     var isAnonymous = poll.Anonymous;
@@ -149,13 +185,11 @@ namespace ChatBridge.Extensions.Vk.Internal
                     contents.Add(new PollContent(question, options, isAnonymous, isMultiple, message.Text, senderName));
                 }
             }
-
             if (message.Attachments.Count != 1)
             {
                 contents.Add(new TextContent(message.Text, senderName));
             }
-
-            return new BridgeMessage(this, senderName, contents);
+            return contents;
         }
 
         /// <summary>
@@ -249,6 +283,15 @@ namespace ChatBridge.Extensions.Vk.Internal
         {
             var msgId = await _api.Messages.SendAsync(new MessagesSendParams
             { PeerId = conversationId, RandomId = new Random().Next(int.MaxValue), Message = content.FormMessage() });
+            
+            //Пример Reply
+            //var ID; ID сообщения на которое надо Reply.
+            //var replyMsg = await _api.Messages.SendAsync(new MessagesSendParams{ PeerId = conversationId, RandomId = new Random().Next(int.MaxValue), Message = content.FormMessage(), ReplyTo = ID});
+
+            //Пример Forward
+            //var IDS; Коллекция IDшек
+            //var msg = await _api.Messages.SendAsync(new MessagesSendParams { PeerId = conversationId, RandomId = new Random().Next(int.MaxValue), Message = content.FormMessage(), ForwardMessages = IDS});
+
             return msgId;
         }
 

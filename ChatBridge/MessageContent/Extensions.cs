@@ -49,6 +49,15 @@ namespace ChatBridge.MessageContent
             throw new InvalidOperationException();
         }
 
+        public static ForwardContent AsForwardedContent(this BridgeMessageContent content)
+        {
+            if (content.Type == BridgeMessageContentType.Forwarded && content is ForwardContent resultContent)
+            {
+                return resultContent;
+            }
+            throw new InvalidOperationException();
+        }
+
         public static string FormMessage(this BridgeMessageContent content)
         {
             switch (content.Type)
@@ -57,8 +66,8 @@ namespace ChatBridge.MessageContent
                     return $"{content.AsTextContent().Sender} 💬\n{content.AsTextContent().Text}";
                 //case BridgeMessageContentType.Reply:
                 //    return $"Reply to {reply} 💬\n{content.AsTextContent().Text}";
-                //case BridgeMessageContentType.Forwarded:
-                //    return $"{sender} forward from {reply} 💬\n{text}";
+                case BridgeMessageContentType.Forwarded:
+                    return $"{content.AsForwardedContent().Sender} forwarded 💬\n";
                 case BridgeMessageContentType.Photo:
                     return $"{content.AsPhotoContent().Sender} 💬\n{content.AsPhotoContent().Caption}";
                 //case BridgeMessageContentType.Audio:

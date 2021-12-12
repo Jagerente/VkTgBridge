@@ -50,50 +50,70 @@ namespace ChatBridge.Extensions.Telegram.Internal
         /// <inheritdoc/>
         public async Task SendMessageAsync(BridgeMessage message, CancellationToken cancelToken = default)
         {
-            //var content = (string) await message.FirstOrDefault().GetDataAsync();
             foreach (var content in message.Content)
             {
-                switch (content.Type)
-                {
-                    case BridgeMessageContentType.Unknown:
-                        break;
-                    case BridgeMessageContentType.Text:
-                        await SendTextAsync(_configuration.ChatId.Value, content.AsTextContent());
-                        break;
-                    case BridgeMessageContentType.Photo:
-                        await SendPhotoAsync(_configuration.ChatId.Value, content.AsPhotoContent());
-                        break;
-                    case BridgeMessageContentType.Audio:
-                        break;
-                    case BridgeMessageContentType.Video:
-                        await SendVideoAsync(_configuration.ChatId.Value, content.AsVideoContent());
-                        break;
-                    case BridgeMessageContentType.Voice:
-                        break;
-                    case BridgeMessageContentType.Document:
-                        break;
-                    case BridgeMessageContentType.Sticker:
-                        await SendStickerAsync(_configuration.ChatId.Value, content.AsStickerContent());
-                        break;
-                    case BridgeMessageContentType.ChatMembersAdded:
-                        break;
-                    case BridgeMessageContentType.ChatMemberLeft:
-                        break;
-                    case BridgeMessageContentType.Poll:
-                        await SendPollAsync(_configuration.ChatId.Value, content.AsPollContent());
-                        break;
-                    case BridgeMessageContentType.Reply:
-                        break;
-                    case BridgeMessageContentType.Forwarded:
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
-                }
+                await GetMessageType(content);
+            }
+
+            //var content = (string) await message.FirstOrDefault().GetDataAsync();
+        }
+
+        public async Task GetMessageType(BridgeMessageContent content)
+        {
+            switch (content.Type)
+            {
+                case BridgeMessageContentType.Unknown:
+                    break;
+                case BridgeMessageContentType.Text:
+                    await SendTextAsync(_configuration.ChatId.Value, content.AsTextContent());
+                    break;
+                case BridgeMessageContentType.Photo:
+                    await SendPhotoAsync(_configuration.ChatId.Value, content.AsPhotoContent());
+                    break;
+                case BridgeMessageContentType.Audio:
+                    break;
+                case BridgeMessageContentType.Video:
+                    await SendVideoAsync(_configuration.ChatId.Value, content.AsVideoContent());
+                    break;
+                case BridgeMessageContentType.Voice:
+                    break;
+                case BridgeMessageContentType.Document:
+                    break;
+                case BridgeMessageContentType.Sticker:
+                    await SendStickerAsync(_configuration.ChatId.Value, content.AsStickerContent());
+                    break;
+                case BridgeMessageContentType.ChatMembersAdded:
+                    break;
+                case BridgeMessageContentType.ChatMemberLeft:
+                    break;
+                case BridgeMessageContentType.Poll:
+                    await SendPollAsync(_configuration.ChatId.Value, content.AsPollContent());
+                    break;
+                case BridgeMessageContentType.Reply:
+                    break;
+                case BridgeMessageContentType.Forwarded:
+                    await SendForwardedAsync(_configuration.ChatId.Value, content.AsForwardedContent());
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        public async Task SendForwardedAsync(long conversationId, ForwardContent content)
+        {
+            await _client.SendTextMessageAsync(conversationId, content.FormMessage());
+            foreach (var message in content.Messages)
+            {
+                await GetMessageType(message);
             }
         }
 
         public async Task<long> SendTextAsync(long conversationId, TextContent content)
         {
+            //Пример Reply;
+            //var ID; Reply msg ID
+            //Convert.ToInt64((await _client.SendTextMessageAsync(conversationId, content.FormMessage(), replyToMessageId: ID)).MessageId);
+
             return Convert.ToInt64((await _client.SendTextMessageAsync(conversationId, content.FormMessage())).MessageId);
         }
 
